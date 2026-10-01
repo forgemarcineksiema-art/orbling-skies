@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>World art (dev)</title>
+<style>
+  body { margin: 0; background: #334; font-family: 'Trebuchet MS', sans-serif; color: #fff; }
+  .bgs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+  .bgs img { width: 100%; display: block; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; padding: 8px; align-items: flex-end; background: #7fb86a; }
+  .row img { background: rgba(255,255,255,.15); }
+  .lbl { font-size: 11px; text-align: center; }
+</style>
+</head>
+<body>
+<div id="out"></div>
+<script src="../src/core/util.js"></script>
+<script src="../src/data/elements.js"></script>
+<script src="../src/art/paint.js"></script>
+<script src="../src/art/scenery.js"></script>
+<script src="../src/art/props.js"></script>
+<script src="../src/art/world_art.js"></script>
+<script src="../src/data/world.js"></script>
+<script>
+  const q = new URLSearchParams(location.search);
+  const out = document.getElementById('out');
+  const mode = q.get('m') || 'bg';
+  if (mode === 'tamers') {
+    const d = document.createElement('div'); d.className = 'row';
+    for (const id in TAMERS) d.innerHTML += `<div><img src="${WArt.person(tamerLook(id))}" width="120" height="170"><div class="lbl">${TAMERS[id].name} · ${TAMERS[id].cls}</div></div>`;
+    out.appendChild(d);
+  } else if (mode === 'one') {
+    const t0 = performance.now();
+    WArt.bake(q.get('b') || 'meadow', +(q.get('s') || 7), q.get('t')).then(c => { c.style.cssText = `width:${q.get('w') || 1280}px;display:block`; out.appendChild(c); document.title = 'baked ' + Math.round(performance.now() - t0) + 'ms'; });
+  } else if (mode === 'bg') {
+    const d = document.createElement('div'); d.className = 'bgs';
+    // ?t=dawn|dusk|night: the backdrops painted for that hour (3.4.1); ?only=meadow,forest picks biomes
+    const bl = (q.get('only') || 'meadow,forest,beach,cove,volcano,caldera,snow,glacier,plains,spire,home,yard,twilight,citadel').split(',');
+    for (const b of bl)
+      d.innerHTML += `<div><img src="${WArt.bg(b, 7, q.get('t'))}"><div class="lbl">${b}${q.get('t') ? ' · ' + q.get('t') : ''}</div></div>`;
+    out.appendChild(d);
+  } else if (mode === 'props') {
+    const d = document.createElement('div'); d.className = 'row';
+    for (const k in WArt.PROP) for (const v of [0, 1]) { const p = WArt.prop(k, v); d.innerHTML += `<div><img src="${p.url}" width="${p.w * 0.8}" height="${p.h * 0.8}"><div class="lbl">${k}:${v}</div></div>`; }
+    out.appendChild(d);
+  } else if (mode === 'people') {
+    const d = document.createElement('div'); d.className = 'row';
+    const looks = [
+      { skin: WArt.SKINS[0], hair: 'spiky', hairC: WArt.HAIRC[1], top: WArt.SUITS[0], acc: ['goggles'] },
+      { skin: WArt.SKINS[2], hair: 'long', hairC: WArt.HAIRC[0], top: WArt.SUITS[5], acc: ['flower'], accC: '#ff8fc2' },
+      { skin: WArt.SKINS[1], hair: 'short', hairC: WArt.HAIRC[6], top: '#ffffff', acc: ['labcoat', 'glasses'] },
+      { skin: WArt.SKINS[3], hair: 'bob', hairC: WArt.HAIRC[3], top: WArt.SUITS[2], acc: ['cap'], accC: '#ff5d6c' },
+      { skin: WArt.SKINS[4], hair: 'curly', hairC: WArt.HAIRC[0], top: WArt.SUITS[3], acc: ['hat'], accC: '#8a6a3a' },
+      { skin: WArt.SKINS[0], hair: 'pony', hairC: WArt.HAIRC[2], top: WArt.SUITS[4], acc: ['headset'] },
+      { skin: WArt.SKINS[1], hair: 'bun', hairC: WArt.HAIRC[5], top: WArt.SUITS[6], acc: ['scarf'], accC: '#ffd23f' },
+      { skin: WArt.SKINS[2], hair: 'short', hairC: WArt.HAIRC[0], top: '#2a2240', pants: '#1c1830', acc: ['hood', 'visor'] },
+      { skin: WArt.SKINS[0], hair: 'long', hairC: WArt.HAIRC[4], top: '#6a4ae8', acc: ['cape', 'crown'], accC: '#ff5d8f' },
+      { skin: WArt.SKINS[3], hair: 'spiky', hairC: WArt.HAIRC[3], top: WArt.SUITS[1], acc: ['bandana'], accC: '#ffd23f' },
+    ];
+    looks.forEach((L, i) => { d.innerHTML += `<div><img src="${WArt.person(L, i % 2 === 1)}" width="120" height="170"></div>`; });
+    d.innerHTML += `<div><img src="${WArt.pip()}" width="80"><img src="${WArt.pip('wow')}" width="80"></div>`;
+    for (const it of ['orb', 'nova', 'galaxy', 'potion', 'superpotion', 'ether', 'revive', 'candy', 'coin', 'gem', 'ticket', 'xp']) d.innerHTML += `<div><img src="${WArt.item(it)}" width="60"><div class="lbl">${it}</div></div>`;
+    out.appendChild(d);
+    const d2 = document.createElement('div'); d2.style.cssText = 'position:relative;height:720px;background:url(' + WArt.space(3) + ');background-size:cover';
+    ['meadow', 'beach', 'volcano', 'snow', 'plains', 'twilight'].forEach((b, i) => { d2.innerHTML += `<img src="${WArt.isle(b)}" style="position:absolute;left:${20 + i * 200}px;top:${100 + (i % 2) * 200}px" width="200">`; });
+    d2.innerHTML += `<div style="position:absolute;left:20px;bottom:20px;color:#fff;display:flex;gap:10px">${Object.keys({ team: 1, codex: 1, bag: 1, quests: 1, shop: 1, spin: 1, map: 1, settings: 1, close: 1, heal: 1, lock: 1, check: 1, star: 1, ad: 1, music: 1, sound: 1, lang: 1, run: 1, swap: 1, trophy: 1, info: 1, gift: 1, ship: 1, orb: 1, telescope: 1 }).map(n => `<span style="background:#3b7dff;border-radius:10px;padding:6px">${WArt.icon(n, 28)}</span>`).join('')}</div>`;
+    out.appendChild(d2);
+  }
+</script>
+</body>
+</html>

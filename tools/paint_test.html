@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Painter test (dev)</title>
+<style>
+  body { margin: 0; background: #7bb86a; font: 12px sans-serif; color: #fff; }
+  #bg { position: fixed; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .grid { position: relative; display: grid; grid-template-columns: repeat(var(--cols, 6), 1fr); gap: 4px; padding: 6px; }
+  .c { text-align: center; }
+  .c img { width: var(--s, 190px); height: var(--s, 190px); display: block; margin: 0 auto; }
+  .c.p img { width: calc(var(--s, 190px) * 0.7); height: var(--s, 190px); }
+  .c b { text-shadow: 0 1px 2px #000; }
+</style>
+</head>
+<body>
+<img id="bg">
+<div class="grid" id="g"></div>
+<script src="../src/core/util.js"></script>
+<script src="../src/data/elements.js"></script>
+<script src="../src/data/moves.js"></script>
+<script src="../src/data/species.js"></script>
+<script src="../src/art/paint.js"></script>
+<script src="../src/art/scenery.js"></script>
+<script src="../src/art/props.js"></script>
+<script src="../src/art/monster_art.js"></script>
+<script src="../src/art/world_art.js"></script>
+<script src="../src/art/painter.js"></script>
+<script src="../src/data/world.js"></script>
+<script>
+  const q = new URLSearchParams(location.search);
+  const g = document.getElementById('g');
+  if (q.get('cols')) g.style.setProperty('--cols', q.get('cols'));
+  if (q.get('s')) g.style.setProperty('--s', q.get('s') + 'px');
+  WArt.bake(q.get('biome') || 'meadow', 11).then(c => { if (c) document.getElementById('bg').src = c.toDataURL(); });
+  const mons = (q.get('m') || 'fluffire,sunkit,mossmoo,breezle,zapsy,clawby').split(',').filter(Boolean);
+  const people = (q.get('p') || '').split(',').filter(Boolean);
+  const cell = (src, label, cls) => { const d = document.createElement('div'); d.className = 'c ' + (cls || ''); d.innerHTML = `<img src="${src}"><b>${label}</b>`; g.appendChild(d); return d.firstChild; };
+  if (q.has('mwalk')) {
+    window.ready = (async () => {
+      g.style.setProperty('--cols', 7);
+      const svgU = o => URL.createObjectURL(new Blob([o], { type: 'image/svg+xml' }));
+      for (const id of (q.get('m') || 'sunkit').split(',')) {
+        const n = MonArt.FRAMES;
+        for (const kind of ['t', 'mv']) {
+          for (let f = 0; f < n; f++) { const im = cell('', id + ' ' + kind + f); const o = kind === 't' ? { t: f / n } : { mv: f / n }; im.src = q.has('paint') ? await MonArt.painted(id, o) : svgU(MonArt.svg(id, Object.assign({ anim: false }, o))); }
+          const im = cell('', id + (kind === 't' ? ' blink' : ' rest')); im.src = q.has('paint') ? await MonArt.painted(id, kind === 't' ? { blink: true } : {}) : svgU(MonArt.svg(id, kind === 't' ? { anim: false, blink: true, t: 0 } : { anim: false }));
+        }
+      }
+      return 'ok';
+    })();
+  } else   if (q.has('walk')) {
+    window.ready = (async () => {
+      g.style.setProperty('--cols', 9);
+      for (const id of (q.get('p') || 'me').split(',')) {
+        const L = id === 'me' ? { skin: WArt.SKINS[1], hair: 'spiky', hairC: WArt.HAIRC[1], top: WArt.SUITS[0], acc: ['goggles'] } : tamerLook(id);
+        for (let f = 0; f < 8; f++) { const im = cell('', id + ' ' + f, 'p'); im.src = q.has('paint') ? await WArt.painted(L, { frame: f }) : URL.createObjectURL(new Blob([WArt.personSvg(L, { walk: f / 8 })], { type: 'image/svg+xml' })); }
+        const im = cell('', id + ' idle', 'p'); im.src = q.has('paint') ? await WArt.painted(L, {}) : URL.createObjectURL(new Blob([WArt.personSvg(L, {})], { type: 'image/svg+xml' }));
+      }
+      return 'ok';
+    })();
+  } else
+  window.ready = (async () => {
+    for (const id of mons) {
+      const v = MonArt.url(id, { anim: false });
+      if (!q.has('only')) cell(v, id + ' (vec)');
+      const im = cell(v, id);
+      if (window.MonArt && MonArt.painted) im.src = await MonArt.painted(id);
+    }
+    for (const id of people) {
+      const L = id === 'me' ? { skin: WArt.SKINS[1], hair: 'spiky', hairC: WArt.HAIRC[1], top: WArt.SUITS[0], acc: ['goggles'] } : tamerLook(id);
+      const v = WArt.person(L);
+      if (!q.has('only')) cell(v, id + ' (vec)', 'p');
+      const im = cell(v, id, 'p');
+      if (WArt.painted) im.src = await WArt.painted(L);
+    }
+    return 'ok';
+  })();
+</script>
+</body>
+</html>

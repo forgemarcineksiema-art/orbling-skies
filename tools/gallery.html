@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Orbling gallery (dev)</title>
+<style>
+  body { margin: 0; background: #cfe8ff; font-family: 'Trebuchet MS', sans-serif; }
+  .grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; padding: 8px; }
+  .c { background: linear-gradient(#e8f6ff, #bfe3a8); border-radius: 12px; text-align: center; padding: 2px; border: 2px solid #2b2040; }
+  .c img { width: 150px; height: 150px; display: block; margin: 0 auto; }
+  .c b { font-size: 13px; color: #2b2040; }
+  .c small { display: block; font-size: 11px; color: #555; }
+  .sh { background: linear-gradient(#2b2350, #463a7a); }
+  .sh b { color: #fff; }
+</style>
+</head>
+<body>
+<div class="grid" id="g"></div>
+<script src="../src/core/util.js"></script>
+<script src="../src/data/elements.js"></script>
+<script src="../src/data/moves.js"></script>
+<script src="../src/data/species.js"></script>
+<script src="../src/art/paint.js"></script>
+<script src="../src/art/monster_art.js"></script>
+<script>
+  const q = new URLSearchParams(location.search);
+  const g = document.getElementById('g');
+  const list = q.get('only') ? q.get('only').split(',') : SPECIES_ORDER;
+  const from = +(q.get('from') || 0), cnt = +(q.get('n') || 999);
+  if (q.get('s')) {
+    const s = +q.get('s');
+    document.head.insertAdjacentHTML('beforeend', `<style>.grid{grid-template-columns:repeat(auto-fill,minmax(${s + 8}px,1fr))}.c img{width:${s}px;height:${s}px}</style>`);
+  }
+  if (q.get('bg')) document.head.insertAdjacentHTML('beforeend', `<style>.c{background:${q.get('bg')}}</style>`);
+  for (const id of list.slice(from, from + cnt)) {
+    const sp = SPECIES[id];
+    const shiny = q.has('shiny');
+    const d = document.createElement('div');
+    d.className = 'c' + (shiny ? ' sh' : '');
+    d.innerHTML = `<img src="${MonArt.url(id, { shiny, anim: !q.has('static') })}"><b>#${sp.no} ${sp.name}</b><small>${sp.sign} · ${sp.el} · S${sp.stage}</small>`;
+    g.appendChild(d);
+  }
+</script>
+</body>
+</html>

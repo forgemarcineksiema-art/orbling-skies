@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Orbling Skies — key art</title>
+<link rel="stylesheet" href="../fonts.css">
+<style>
+  html, body { margin: 0; overflow: hidden; background: #0d1a2c; }
+  #c { position: relative; overflow: hidden; }
+  #c > * { position: absolute; }
+  #c.sheet > * { position: static; }
+  .sheet { display: flex; flex-wrap: wrap; gap: 8px; padding: 8px; background: #bfe3ff; }
+  .sheet div { width: 300px; text-align: center; font: 14px sans-serif; }
+  .sheet img { width: 300px; height: 300px; object-fit: contain; background: #e9f5ff; }
+</style>
+</head>
+<body>
+<div id="c"></div>
+<!-- the game's own art code (no boot: main.js is not loaded) -->
+<script src="../src/core/util.js"></script>
+<script src="../src/core/i18n.js"></script>
+<script src="../src/core/platform.js"></script>
+<script src="../src/core/audio.js"></script>
+<script src="../src/data/elements.js"></script>
+<script src="../src/data/moves.js"></script>
+<script src="../src/data/species.js"></script>
+<script src="../src/data/items.js"></script>
+<script src="../src/art/paint.js"></script>
+<script src="../src/art/painter.js"></script>
+<script src="../src/art/scenery.js"></script>
+<script src="../src/art/props.js"></script>
+<script src="../src/art/base_art.js"></script>
+<script src="../src/art/monster_art.js"></script>
+<script src="../src/art/world_art.js"></script>
+<script src="../src/art/hud_art.js"></script>
+<script src="../src/scenes/title.js"></script>
+<script src="../src/scenes/prologue.js"></script>
+<script src="keyart.js"></script>
+</body>
+</html>

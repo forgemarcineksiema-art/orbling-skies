@@ -1,0 +1,287 @@
+/* =====================================================================================================
+ * Orbling Galaxy 3.3 — panels ("Obłok"). Every popup, card, tab, toggle, toast and info card in one material that
+ * speaks the chunky language of the buttons and the painted Orblings: a white-to-sky body, a 3 px ink outline,
+ * a solid bottom edge (the panel has thickness), a coloured title plaque sitting on the top edge. Text inside is
+ * dark ink; colour is kept for state (ready = gold, done = green, rare/special = violet), for the Orblings' own
+ * element cards and for the buttons. The HUD, the battle deck and the world chrome stay in skin.css.
+ * ===================================================================================================== */
+:root {
+  --pn-ink: #0a121b;
+  --pn-top: #ffffff; --pn-mid: #f2f7fd; --pn-bot: #e1eaf7; --pn-edge: #bccde6;
+  --pn-txt: #1b2940; --pn-txt2: #5a6c86; --pn-acc: #1f6fd0;
+  --pn-card: #ffffff; --pn-line: #cbd9ec; --pn-well: #e8f0fa; --pn-well-line: #d3e0f1; --pn-hover: #79b2f2;
+  --pn-gold: #fff3c8; --pn-gold-b: #efb02a; --pn-green: #e1f6d8; --pn-green-b: #5ab83a;
+  --pn-violet: #f1e8ff; --pn-violet-b: #ab82ee; --pn-pink: #ffeaf3; --pn-pink-b: #f29ac0;
+  --pn-pl1: #76cfff; --pn-pl2: #2a7ee0;
+}
+
+/* ---------------------------------------------------------------- the popup */
+.modal-back { background: radial-gradient(ellipse at 50% 45%, rgba(10,18,40,.4), rgba(6,10,26,.7)); padding: 34px 0 14px; box-sizing: border-box; }
+.modal {
+  --txt: var(--pn-txt); --txt2: var(--pn-txt2); /* everything inside that reads the theme colours turns to ink */
+  color: var(--pn-txt); padding: 52px 28px 26px; border: 3px solid var(--pn-ink); border-radius: 24px;
+  background: linear-gradient(var(--pn-top), var(--pn-mid) 50%, var(--pn-bot));
+  box-shadow: inset 0 3px 0 #ffffff, inset 0 -6px 0 var(--pn-edge), 0 6px 0 var(--pn-ink), 0 22px 46px rgba(0,0,0,.42);
+}
+.modal::before { content: none; }
+.modal:not(:has(> .ribbon)) { padding-top: 34px; }
+/* the title plaque rides on the top edge */
+.modal .ribbon {
+  position: absolute; left: 50%; right: auto; top: 0; transform: translate(-50%, -50%); width: max-content; max-width: calc(100% - 96px);
+  padding: 9px 34px 11px; border: 3px solid var(--pn-ink); border-radius: 16px; box-sizing: border-box;
+  background: linear-gradient(var(--pl1, var(--pn-pl1)), var(--pl2, var(--pn-pl2)));
+  box-shadow: inset 0 3px 0 rgba(255,255,255,.5), inset 0 -4px 0 rgba(0,0,0,.2), 0 4px 0 var(--pn-ink);
+  font: italic 900 27px/1.1 var(--f-ui); color: #fff; text-shadow: var(--otl); text-align: center; letter-spacing: .3px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.port .modal .ribbon { max-width: calc(100% - 64px); padding: 8px 20px 10px; font-size: 23px; } /* (long titles fit the phone) */
+.modal .ribbon.green { --pl1: #a6f27c; --pl2: #33a524; }
+.modal .ribbon.gold { --pl1: #ffe56e; --pl2: #f0970c; }
+.modal .ribbon.purple { --pl1: #cf9cff; --pl2: #7440d6; }
+.modal .ribbon.red { --pl1: #ff9a86; --pl2: #d4321f; }
+.modal .ribbon.dark { --pl1: #6d8bb0; --pl2: #2f4a6e; }
+.xbtn {
+  right: -17px; top: -17px; width: 48px; height: 48px; border: 3px solid var(--pn-ink); border-radius: 50%;
+  background: radial-gradient(circle at 40% 30%, #ff9e8c, #e8432f 58%, #b8261a); color: #fff;
+  box-shadow: inset 0 2px 0 rgba(255,255,255,.45), 0 3px 0 var(--pn-ink), 0 6px 10px rgba(0,0,0,.28);
+}
+.xbtn .ico { width: 24px; height: 24px; stroke-width: 4; filter: drop-shadow(0 1.5px 0 var(--pn-ink)) drop-shadow(0 -1px 0 var(--pn-ink)); }
+.xbtn:hover { filter: brightness(1.08); }
+.xbtn:active { transform: translateY(2px); box-shadow: inset 0 2px 0 rgba(255,255,255,.4), 0 1px 0 var(--pn-ink); }
+.port .xbtn { right: -8px; top: -14px; } /* (the popup fills the phone's width) */
+.modal .muted, .modal p.muted { color: var(--pn-txt2); opacity: 1; }
+/* section headings: a small blue tab */
+.modal h3 {
+  display: inline-block; margin: 14px 0 8px; padding: 4px 14px 5px; border: 2px solid var(--pn-ink); border-radius: 10px;
+  background: linear-gradient(var(--pn-pl1), var(--pn-pl2)); box-shadow: inset 0 2px 0 rgba(255,255,255,.4), 0 2px 0 var(--pn-ink);
+  font: italic 900 17px/1.2 var(--f-ui); color: #fff; letter-spacing: .6px; text-transform: uppercase; text-shadow: var(--otl-s);
+}
+.modal h3 small { text-transform: none; letter-spacing: 0; color: #e8f4ff; opacity: 1; }
+.modal h4 { color: var(--pn-txt); }
+.confirm p, .reward-box .sub, .starter-pick .sub, .login .sub { color: var(--pn-txt); }
+
+/* ---------------------------------------------------------------- cards (raised, white) and wells (sunken, sky) */
+.chip, .bag-row, .it-row, .pt-card, .qcard, .shop-card, .scard, .cslot, .mcard, .lday, .obs-card, .ar-row, .dp-item, .tu-row, .mile, .day-card, .md-trait {
+  background: var(--pn-card); border: 2px solid var(--pn-line); border-radius: 14px; color: var(--pn-txt);
+  box-shadow: 0 3px 0 var(--pn-line);
+}
+.md-evo, .ws-worker, .decor-pick .dp-cur, .tc-tr, .md-dust, .md-fr, .pf-asc {
+  background: var(--pn-well); border: 2px solid var(--pn-well-line); border-radius: 12px; color: var(--pn-txt); box-shadow: inset 0 2px 0 rgba(20,40,80,.05);
+}
+.pt-card, .it-row, .scard, .dp-item, .obs-card, .cx-cell { transition: border-color .12s, transform .12s, background-color .12s; }
+.pt-card:hover, .it-row:hover, .scard:hover, .dp-item:hover, .obs-card:hover { background: #f5faff; border-color: var(--pn-hover); box-shadow: 0 3px 0 var(--pn-hover); }
+/* names, notes and amounts on cards */
+.chip b, .bag-row b, .it-row b, .pt-card b, .qcard b, .shop-card b, .scard b, .cslot b, .mcard b, .lday b, .mc-t b, .dp-item b, .tu-row b, .mile b, .decor-pick .dp-cur b {
+  color: var(--pn-txt); text-shadow: none;
+}
+.chip small, .bag-row small, .it-row small, .pt-card small, .qcard small, .shop-card small, .scard small, .scard em, .br-note, .mc-t small, .dp-item em, .tu-known, .tu-lv { color: var(--pn-txt2); opacity: 1; }
+.bag-row em, .it-row em { color: #2e9a1c; text-shadow: none; }
+/* states */
+.qcard.main, .cslot.ready, .mcard.ready, .ar-row.champ, .mile.ready { background: linear-gradient(#fff8dc, var(--pn-gold)); border-color: var(--pn-gold-b); box-shadow: 0 3px 0 var(--pn-gold-b); }
+.mcard.done, .ar-row.beaten, .mile.done, .lday.got { background: linear-gradient(#f1fbec, var(--pn-green)); border-color: var(--pn-green-b); box-shadow: 0 3px 0 var(--pn-green-b); }
+.ar-row.champ.beaten { background: linear-gradient(#f1fbec, var(--pn-green)); }
+.shop-card.ad, .lday.big, .obs-card.ready, .qcard.story { background: linear-gradient(#f8f3ff, var(--pn-violet)); border-color: var(--pn-violet-b); box-shadow: 0 3px 0 var(--pn-violet-b); }
+.lday.today, .lday.big.today { background: linear-gradient(#fffbe6, #ffe896); border-color: var(--pn-gold-b); box-shadow: 0 3px 0 var(--pn-gold-b), 0 0 0 3px rgba(255,210,63,.55), 0 0 16px rgba(255,200,40,.55); }
+.lday.got { opacity: .8; }
+.cslot.locked, .tcard.empty { background: repeating-linear-gradient(135deg, #f2f6fc 0 12px, #e9f0f9 12px 24px); border: 2px dashed #a9bcd8; box-shadow: none; color: var(--pn-txt2); }
+.shop-card.ws.done { border-color: var(--pn-green-b); box-shadow: 0 3px 0 var(--pn-green-b); }
+.pt-card.match { border-color: var(--pn-green-b); }
+
+/* ---------------------------------------------------------------- controls */
+.btn.white { background: linear-gradient(#ffffff, #d8e3f2); color: var(--pn-txt); text-shadow: none; } /* the secondary / not-chosen button */
+.btn.white .ico { filter: none; }
+.tab, .chc {
+  border: 2px solid var(--pn-ink); border-radius: 12px; background: linear-gradient(#ffffff, #dbe6f4); color: #3a4d68;
+  font: italic 900 18px var(--f-ui); text-shadow: none; box-shadow: inset 0 2px 0 #ffffff, 0 3px 0 var(--pn-ink);
+}
+.chc { font-size: 17px; }
+.tab:hover, .chc:hover { filter: brightness(1.04); }
+.tab.on, .chc.on { background: linear-gradient(var(--pn-pl1), var(--pn-pl2)); color: #fff; text-shadow: var(--otl-s); box-shadow: inset 0 2px 0 rgba(255,255,255,.45), 0 3px 0 var(--pn-ink); }
+.tab .ico { filter: none; }
+.tab.on .ico { filter: drop-shadow(0 1.5px 0 var(--pn-ink)) drop-shadow(0 -1px 0 var(--pn-ink)) drop-shadow(1px 0 0 var(--pn-ink)) drop-shadow(-1px 0 0 var(--pn-ink)); }
+.toggle { border: 2px solid var(--pn-ink); background: #cbd8ea; box-shadow: inset 0 2px 3px rgba(10,30,60,.25); }
+.toggle i { border: 2px solid var(--pn-ink); background: linear-gradient(#ffffff, #d6e0ec); }
+.toggle.on { background: linear-gradient(#8ae86a, #2e9a1c); }
+.wallet span { background: #ffffff; border: 2px solid var(--pn-ink); color: var(--pn-txt); font: italic 900 20px var(--f-ui); box-shadow: 0 2px 0 var(--pn-ink); }
+.lvtag { background: var(--pn-txt); border: 2px solid var(--pn-ink); color: #fff; }
+.hc-fav { border: 2px solid var(--pn-ink); background: linear-gradient(#ffffff, #dbe6f4); color: #b9c6d8; box-shadow: 0 2px 0 var(--pn-ink); }
+.hc-fav.on { color: #ffc21a; background: linear-gradient(#fff6c8, #ffd96a); box-shadow: 0 2px 0 var(--pn-ink), 0 0 8px rgba(255,200,40,.6); }
+.egg-btn { background: linear-gradient(#ffffff, #e2ebf7); border: 2px solid var(--pn-ink); border-radius: 12px; box-shadow: 0 3px 0 var(--pn-ink); }
+.egg-btn:hover { background: linear-gradient(#ffffff, #d2e2f6); }
+.egg-btn em { color: var(--pn-txt); }
+.set-row { border-bottom: 2px solid var(--pn-line); color: var(--pn-txt); }
+.ver { color: var(--pn-txt2); }
+.cz-name { border: 2px solid var(--pn-ink); border-radius: 12px; background: #ffffff; color: var(--pn-txt); font: italic 900 24px var(--f-ui); box-shadow: inset 0 2px 3px rgba(10,30,60,.18); }
+.cz-row label { color: var(--pn-txt); }
+.sw.on { outline: 3px solid var(--pn-pl2); }
+
+/* ---------------------------------------------------------------- inside the popups */
+/* team: the Orblings keep their element cards; the storage is a grid of white cards */
+.tcard { border: 3px solid var(--pn-ink); border-radius: 16px; box-shadow: inset 0 0 0 2px rgba(255,255,255,.28), 0 4px 0 var(--pn-ink); }
+.tcard:hover { transform: translateY(-3px); box-shadow: inset 0 0 0 2px rgba(255,255,255,.4), 0 7px 0 var(--pn-ink); }
+.tcard.empty span { color: #9fb2cc; opacity: 1; }
+.box-grid .scard, .scard { border-radius: 12px; }
+.box-grid p { color: var(--pn-txt2); }
+/* an Orbling's page */
+.md-left { border: 3px solid var(--pn-ink); border-radius: 18px; box-shadow: inset 0 0 0 2px rgba(255,255,255,.28), 0 4px 0 var(--pn-ink); }
+.md-trait { border-color: rgba(10,18,27,.35); box-shadow: 0 3px 0 rgba(10,18,27,.25); }
+.md-trait b { color: #7a3aff; font: italic 900 18px var(--f-ui); text-shadow: none; }
+.md-trait small { color: var(--pn-txt); }
+.md-right, .md-lv b, .md-hp b, .md-stat { color: var(--pn-txt); }
+.md-lv small, .md-hp small { color: var(--pn-txt2); }
+.md-right h4 { color: var(--pn-acc); font: italic 900 17px var(--f-ui); text-transform: uppercase; letter-spacing: .6px; }
+.md-right h4 small { color: var(--pn-txt2); text-transform: none; letter-spacing: 0; }
+.mchip { opacity: .75; border: 2px solid var(--pn-ink); border-radius: 10px; box-shadow: inset 0 2px 0 rgba(255,255,255,.3), 0 2px 0 var(--pn-ink); }
+.mchip.on { opacity: 1; box-shadow: inset 0 2px 0 rgba(255,255,255,.3), 0 2px 0 var(--pn-ink), 0 0 0 3px #ffd23f; }
+.evo-mon small { color: var(--pn-txt2); }
+.evo-mon.cur { background: #ffffff; border-radius: 10px; box-shadow: 0 0 0 2px var(--pn-pl2); }
+.md-evo .arrow { color: var(--pn-txt2); }
+.md-train { color: #d8740a; }
+.md-dust { background: var(--pn-violet); border-color: #dccaf8; }
+.md-fr { background: var(--pn-pink); border-color: #f8cfe2; }
+.md-fr small { color: #8a3a5c; }
+.hearts .ico { color: #d9e2ee; }
+.cap-dust { color: #7a3aff !important; }
+/* the Codex: a light field guide — sign rows of tiles, caught ones white, legends in gold */
+.modal.codex-dark { background: linear-gradient(var(--pn-top), var(--pn-mid) 50%, var(--pn-bot)); border: 3px solid var(--pn-ink); box-shadow: inset 0 3px 0 #ffffff, inset 0 -6px 0 var(--pn-edge), 0 6px 0 var(--pn-ink), 0 22px 46px rgba(0,0,0,.42); }
+.codex-dark .cx-prog b { color: var(--pn-txt); } .codex-dark .cx-prog small { color: var(--pn-txt2); }
+.cx-cell { background: var(--pn-well); border: 2px solid var(--pn-well-line); border-radius: 12px; box-shadow: none; }
+.cx-cell small { color: var(--pn-txt2); opacity: 1; }
+.cx-cell.st0 { background: #dfe7f2; }
+.cx-cell.st1 { background: #edf2f9; }
+.cx-cell.st2 { background: #ffffff; border-color: var(--pn-line); box-shadow: 0 3px 0 var(--pn-line); }
+.cx-cell.leg { background: linear-gradient(#fbf3d8, #f0e0b0); border-color: #e2c77a; }
+.cx-cell.leg.st2 { background: linear-gradient(#fffbe8, #ffe9a0); border-color: var(--pn-gold-b); box-shadow: 0 3px 0 var(--pn-gold-b); }
+.cx-cell.r-rare { border-color: #7ab8f2; } .cx-cell.r-epic { border-color: #c29af2; } .cx-cell.r-legend { border-color: var(--pn-gold-b); }
+.cx-cell.team { outline: 3px solid var(--pn-pl2); outline-offset: -3px; }
+.cx-cell:hover { border-color: var(--pn-hover); }
+.codex-dark .cx-glyph { color: #e8432f; }
+.codex-dark img.sil { filter: brightness(0); opacity: .5; }
+.codex-dark .cxd-sign svg * { stroke: #6fa6e6; }
+.codex-dark .cx-head small { color: var(--pn-txt2); }
+.codex-dark .cxd-art, .cxd-art { background: radial-gradient(circle at 50% 42%, #ffffff, #dcebfc 58%, #b4cdf0); border: 3px solid var(--pn-ink); border-radius: 18px; box-shadow: inset 0 0 0 2px rgba(255,255,255,.6), 0 4px 0 var(--pn-ink); }
+.codex-dark .cxd-name { color: #fff; font: italic 900 32px var(--f-ui); text-shadow: var(--otl); }
+.codex-dark .cxd-info p { color: var(--pn-txt); } .codex-dark .cxd-hab, .codex-dark .cxd-info small { color: var(--pn-txt2); }
+.cx-rar { color: var(--pn-txt2); }
+.mile { background: var(--pn-well); border-color: var(--pn-well-line); box-shadow: none; }
+/* shop and quests */
+.shop-card .own { color: var(--pn-txt2); }
+.shop-card .uniq { color: #c07a00; text-shadow: none; }
+.qc-t small { color: var(--pn-acc); }
+.qc-hint { color: #2e9a1c !important; }
+.qc-bar em { color: var(--pn-txt); }
+/* profile */
+.pf-ava { border: 3px solid var(--pn-ink); border-radius: 16px; background: radial-gradient(circle at 50% 40%, #ffffff, #bfe3ff 60%, #7cbcf4); box-shadow: 0 4px 0 var(--pn-ink); }
+.pf-name { color: #fff; text-shadow: var(--otl); }
+.pf-rank { color: var(--pn-acc); }
+.srow { color: var(--pn-txt); }
+.pf-asc { background: var(--pn-violet); border-color: #dccaf8; }
+.pf-asc b { color: #7a3aff; }
+/* hatchery & dojo */
+.cslot { border-radius: 16px; }
+.cslot.locked b { color: var(--pn-txt2); }
+.mat { border: 2px solid var(--pn-ink); color: #f4ead8; }
+.camp-tip { color: var(--pn-txt2); } .camp-tip b { color: var(--pn-acc); }
+/* medals */
+.md-top { color: var(--pn-txt); }
+.mc-pips i { border: 1.5px solid var(--pn-ink); background: #dde6f2; }
+/* the daily panel and the login week */
+.day-card { gap: 8px; padding: 12px 14px 14px; }
+.day-card h4 { color: var(--pn-txt); text-shadow: none; }
+.day-card h4 .ico { color: var(--pn-acc); }
+.day-card .muted { color: var(--pn-txt2); }
+.day-card .lday { background: var(--pn-well); border-color: var(--pn-well-line); box-shadow: none; }
+.day-card .lday.today, .day-card .lday.big.today { background: linear-gradient(#fffbe6, #ffe896); border-color: var(--pn-gold-b); box-shadow: 0 0 0 3px rgba(255,210,63,.55), 0 0 14px rgba(255,200,40,.5); }
+.day-card .lday.got { background: var(--pn-green); border-color: var(--pn-green-b); }
+.day-card .lday.big { background: var(--pn-violet); border-color: var(--pn-violet-b); }
+.lday small { color: var(--pn-acc); }
+.lday b { color: var(--pn-txt); text-shadow: none; }
+/* caught, evolution, hatching, sigils, trophies */
+.cap-art { border: 3px solid var(--pn-ink); box-shadow: inset 0 0 0 3px rgba(255,255,255,.3), 0 4px 0 var(--pn-ink); }
+.caught p, .evo-txt, .hatch-info p, .sigil-box p { color: var(--pn-txt); }
+.evo-txt b { color: #7a3aff; }
+/* the evolution flashes white: it happens on a violet stage, not on the white panel */
+.evo-stage::before { content: ''; position: absolute; inset: 16px; border-radius: 50%; background: radial-gradient(circle at 50% 42%, #b793ff, #6a3ad0 58%, #34167e); border: 3px solid var(--pn-ink); box-shadow: inset 0 0 0 3px rgba(255,255,255,.28), 0 4px 0 var(--pn-ink); }
+/* type chart & observatory */
+.tc-rule, .tc-el { color: var(--pn-txt); } .tc-arrow { color: var(--pn-acc); } .tc-arrow b { color: #2e9a1c; }
+.tc-tr em { color: #7a3aff; }
+/* decorations, workshops, the wheel */
+.decor-pick h4 { color: var(--pn-acc); }
+.ws-card { color: var(--pn-txt); }
+.ws-top b { color: var(--pn-txt); text-shadow: none; }
+.ws-top p, .ws-worker small { color: var(--pn-txt2); }
+.spin-odds { color: var(--pn-txt2); } .spin-odds > b { color: var(--pn-acc); } .spin-odds em { color: var(--pn-txt); }
+
+/* the plaque rides above the panel: tall popups keep their lists a little shorter so the whole panel stays on screen */
+.shop-grid { max-height: 512px; }
+.md-grid { max-height: 492px; }
+.bag { max-height: 480px; }
+.tc-traits { max-height: 256px; }
+.obs-grid { gap: 8px; max-height: 476px; overflow-y: auto; overscroll-behavior: contain; padding: 2px 4px 6px 2px; }
+.port .obs-grid { max-height: none; overflow: visible; }
+.obs-card img { width: 92px; height: 92px; }
+
+/* ---------------------------------------------------------------- toasts */
+.toast {
+  background: linear-gradient(#ffffff, #e6eef9); color: var(--pn-txt); border: 3px solid var(--pn-ink); border-radius: 16px; padding: 9px 22px 11px;
+  font: italic 900 19px var(--f-ui); text-shadow: none; box-shadow: inset 0 2px 0 #ffffff, inset 0 -4px 0 var(--pn-edge), 0 4px 0 var(--pn-ink), 0 10px 20px rgba(0,0,0,.3);
+}
+.toast.good { background: linear-gradient(#c8f7b2, #7fd95e); color: #0e3308; box-shadow: inset 0 2px 0 rgba(255,255,255,.6), inset 0 -4px 0 #52b32f, 0 4px 0 var(--pn-ink), 0 10px 20px rgba(0,0,0,.3); }
+.toast.bad { background: linear-gradient(#ffc4ba, #f07762); color: #470c05; box-shadow: inset 0 2px 0 rgba(255,255,255,.55), inset 0 -4px 0 #d24c38, 0 4px 0 var(--pn-ink), 0 10px 20px rgba(0,0,0,.3); }
+.port .toast { font-size: 22px; }
+/* 3.4: a cheer — a celebration that needs no tap (a quest done, a rank up, a battle's spoils, the daily reward): the
+ * light card with a coloured plaque on its top edge, one line and the rewards as pills */
+.toast.cheer { flex-direction: column; gap: 6px; min-width: 300px; max-width: 600px; margin-top: 18px; padding: 22px 24px 12px; text-align: center; }
+.ch-t { position: absolute; left: 50%; top: 0; translate: -50% -58%; padding: 5px 22px 7px; border: 3px solid var(--pn-ink); border-radius: 14px; background: #ffc629;
+  font: italic 900 22px/1 var(--f-ui); color: #fff; white-space: nowrap; text-shadow: var(--otl-s); box-shadow: inset 0 2px 0 rgba(255,255,255,.55), inset 0 -3px 0 rgba(0,0,0,.18), 0 3px 0 var(--pn-ink); }
+.toast.cheer.green .ch-t { background: #4cc02a; } .toast.cheer.purple .ch-t { background: #9a6cf0; }
+.ch-sub { font: 800 19px/1.2 var(--f-ui); font-style: normal; color: var(--pn-txt); }
+.ch-pills { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.ch-pill { display: inline-flex; align-items: center; gap: 4px; padding: 2px 12px 2px 4px; border: 2px solid var(--pn-ink); border-radius: 16px; background: #ffffff; box-shadow: 0 2px 0 var(--pn-ink); }
+.ch-pill img { width: 32px; height: 32px; }
+.ch-pill b { font: italic 900 21px/1 var(--f-ui); color: var(--pn-txt); }
+.toast.cheer { position: relative; }
+.port .toast.cheer { max-width: 510px; }
+.port .ch-sub { font-size: 21px; }
+/* the reveal of a catch carries the battle's spoils as the same pills, beside its OK */
+.rv-row .ch-pills { flex-wrap: nowrap; }
+.rv-row .ch-pill img { width: 36px; height: 36px; }
+.rv-row .ch-pill b { font-size: 24px; }
+/* the daily reward's small window: the week's strip and the two buttons */
+.dgift .login-days { margin: 4px 0 18px; }
+
+/* ---------------------------------------------------------------- info cards and tips in the world */
+.hb-tip, .mn-tip, .mv-hint {
+  background: #ffffff; border: 2px solid var(--pn-ink); border-radius: 10px; color: var(--pn-txt); text-shadow: none; box-shadow: 0 3px 0 var(--pn-ink), 0 6px 12px rgba(0,0,0,.25);
+}
+.mn-tip { color: var(--pn-txt2); }
+.mn-tip b { color: var(--pn-txt); }
+.hb-tip .ico { filter: none; }
+.hb-goal { background: #ffffff; border: 2px solid var(--pn-ink); border-radius: 12px; box-shadow: 0 3px 0 var(--pn-ink), 0 6px 12px rgba(0,0,0,.25); }
+.hb-goal b { color: var(--pn-txt); text-shadow: none; }
+.hb-goal u { color: #2e9a1c; }
+.hb-goal small { color: var(--pn-acc); }
+.mv-card, .home-card, .lvpanel {
+  background: linear-gradient(var(--pn-top), var(--pn-mid) 55%, var(--pn-bot)); border: 3px solid var(--pn-ink); border-radius: 18px; color: var(--pn-txt);
+  box-shadow: inset 0 2px 0 #ffffff, inset 0 -5px 0 var(--pn-edge), 0 5px 0 var(--pn-ink), 0 14px 30px rgba(0,0,0,.4);
+}
+.mvc-thumb { border-radius: 10px; box-shadow: 0 0 0 2px var(--pn-ink); }
+.mvc-name { color: var(--pn-txt); }
+.mvc-note { color: var(--pn-txt2); }
+.mvc-sp { background: var(--pn-well); }
+.home-card .hc-top b { color: #fff; text-shadow: var(--otl); }
+.home-card .hc-top em { color: var(--pn-acc); text-shadow: none; }
+.home-card small { color: var(--pn-txt2); }
+.lvp-head { color: var(--pn-acc); text-shadow: none; }
+.lvp-row { border-bottom: 2px solid var(--pn-line); }
+.lvp-row em { color: #2e9a1c; }
+/* the Star Arena: the leagues are cards and the ladder a panel of the same kind */
+.ar-lg { border: 3px solid var(--pn-ink); border-radius: 16px; background: linear-gradient(#ffffff, #e3ecf8); color: var(--pn-txt); box-shadow: inset 0 2px 0 #ffffff, 0 3px 0 var(--pn-ink); }
+.ar-lg.on { outline: none; background: linear-gradient(90deg, #ffffff 35%, color-mix(in srgb, var(--lc) 50%, #ffffff)); box-shadow: inset 0 2px 0 #ffffff, 0 3px 0 var(--pn-ink), 0 0 0 3px var(--lc); }
+.ar-lg-t b { color: var(--pn-txt); text-shadow: none; }
+.ar-lg-t small { color: var(--pn-txt2); }
+.ar-ladder { border: 3px solid var(--pn-ink); border-radius: 20px; background: linear-gradient(var(--pn-top), var(--pn-mid) 55%, var(--pn-bot)); color: var(--pn-txt); box-shadow: inset 0 3px 0 #ffffff, inset 0 -6px 0 var(--pn-edge), 0 6px 0 var(--pn-ink), 0 18px 40px rgba(0,0,0,.45); }
+.ar-head { border-bottom: 2px solid var(--pn-line); }
+.ar-head b { color: var(--pn-txt); text-shadow: none; }
+.ar-name b { color: var(--pn-txt); } .ar-name small, .ar-mon small { color: var(--pn-txt2); }
+.ar-rw.first { color: #d8870a; } .ar-st { color: var(--pn-txt2); }
