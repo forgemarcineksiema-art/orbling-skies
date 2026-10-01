@@ -6,6 +6,14 @@ A collectible monster-taming RPG for the browser. Fly between six floating Star 
 creatures born from falling stars — train them in turn-based battles, evolve them, beat the island Guardians and
 collect all 12 legendary Zodiac Orblings.
 
+<p>
+  <img src="docs/screenshots/battle.jpg" alt="A wild battle" width="100%">
+</p>
+<p>
+  <img src="docs/screenshots/explore-beach.jpg" alt="Exploring the beach" width="49%">
+  <img src="docs/screenshots/explore-volcano.jpg" alt="The volcano isle" width="49%">
+</p>
+
 ## Features
 
 - 48 Orblings: 12 three-stage evolution lines and 12 legends
