@@ -7,6 +7,9 @@ creatures born from falling stars — train them in turn-based battles, evolve t
 collect all 12 legendary Zodiac Orblings.
 
 <p>
+  <img src="docs/screenshots/gameplay.webp" alt="Gameplay: walking up to a wild Orbling, battling and catching it" width="100%">
+</p>
+<p>
   <img src="docs/screenshots/battle.jpg" alt="A wild battle" width="100%">
 </p>
 <p>
