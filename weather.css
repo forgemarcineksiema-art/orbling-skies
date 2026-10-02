@@ -1,0 +1,115 @@
+/* 3.5 "Skies over the isles": the weather (rain, storm, heat, fog), the falling star and its crater, Jett's forecast. */
+
+/* ---------- the two weather layers (see Weather.layers): the sky over the backdrop, the front over the world ---------- */
+.wx-sky, .wx-front { position: absolute; left: 0; top: 0; width: 1280px; height: 720px; pointer-events: none; overflow: hidden; }
+.wx-sky { z-index: 0; }
+.wx-front { z-index: 3; }
+/* clouds darken the sky only: the land and everyone on it keep their colours (never a dark sheet over the scene) */
+.wx-sky.k-rain { background: linear-gradient(180deg, rgba(58,70,96,.6), rgba(70,84,110,.34) 210px, rgba(70,84,110,0) 400px); }
+.wx-sky.k-storm { background: linear-gradient(180deg, rgba(30,34,60,.8), rgba(44,48,78,.5) 230px, rgba(44,48,78,0) 430px); }
+.wx-sky.k-rain::before, .wx-sky.k-storm::before { content: ''; position: absolute; left: -12%; top: -70px; width: 124%; height: 270px; animation: wxDrift 70s linear infinite alternate;
+  background: radial-gradient(ellipse 15% 55% at 8% 45%, rgba(112,122,146,.85), rgba(112,122,146,0) 70%), radial-gradient(ellipse 18% 62% at 27% 35%, rgba(126,136,160,.8), rgba(126,136,160,0) 70%),
+    radial-gradient(ellipse 16% 52% at 47% 48%, rgba(104,114,140,.8), rgba(104,114,140,0) 70%), radial-gradient(ellipse 19% 60% at 68% 34%, rgba(122,132,156,.82), rgba(122,132,156,0) 70%),
+    radial-gradient(ellipse 15% 55% at 90% 44%, rgba(108,118,142,.85), rgba(108,118,142,0) 70%); }
+.wx-sky.k-storm::before { filter: brightness(.62); }
+.wx-sky.k-heat { background: radial-gradient(circle at 82% -4%, rgba(255,226,140,.8), rgba(255,176,80,.3) 26%, rgba(255,160,60,0) 48%), linear-gradient(180deg, rgba(255,176,90,.26), rgba(255,176,90,0) 430px); }
+.wx-sky.k-fog { background: linear-gradient(180deg, rgba(228,234,242,.28), rgba(228,234,242,.58) 340px, rgba(228,234,242,.34) 470px, rgba(228,234,242,.14)); }
+.wx-sky.k-fog.ash { background: linear-gradient(180deg, rgba(150,132,124,.34), rgba(170,152,142,.56) 340px, rgba(170,152,142,.3) 470px, rgba(170,152,142,.12)); }
+/* rain: slanted streaks, rings where drops hit the ground; a storm pours harder */
+.wx-front .wd { position: absolute; top: -70px; width: 2px; height: 46px; border-radius: 2px; background: linear-gradient(rgba(220,236,255,0), rgba(225,238,255,.9)); animation: wxRain linear infinite; }
+.wx-front.k-storm .wd { width: 2.5px; height: 60px; }
+.wx-front .ws { position: absolute; width: 24px; height: 8px; margin: -4px 0 0 -12px; border: 2px solid rgba(225,240,255,.75); border-radius: 50%; opacity: 0; animation: wxSplash ease-out infinite; }
+/* a blizzard on the Frost Isle: snow driven by the wind */
+.wx-front .wf { position: absolute; top: -20px; width: 7px; height: 7px; border-radius: 50%; background: #fff; box-shadow: 0 0 4px #fff; animation: wxSnow linear infinite; }
+/* fog: soft banks drifting across the ground, in front of everyone but thin enough to see through */
+.wx-front .wfog { position: absolute; left: -45%; width: 190%; height: 160px; margin-top: -80px; animation: wxFog ease-in-out infinite alternate;
+  background: radial-gradient(ellipse 16% 50% at 12% 50%, rgba(238,242,248,.5), rgba(238,242,248,0) 70%), radial-gradient(ellipse 14% 44% at 38% 56%, rgba(238,242,248,.42), rgba(238,242,248,0) 70%),
+    radial-gradient(ellipse 17% 50% at 63% 46%, rgba(238,242,248,.5), rgba(238,242,248,0) 70%), radial-gradient(ellipse 14% 46% at 88% 54%, rgba(238,242,248,.44), rgba(238,242,248,0) 70%); }
+.wx-front.ash .wfog { filter: sepia(.5) brightness(.82); }
+/* a heatwave: shimmer rising off the hot ground */
+.wx-front .wh { position: absolute; width: 130px; height: 44px; margin-left: -65px; border-radius: 50%; opacity: 0; background: radial-gradient(ellipse, rgba(255,244,210,.34), rgba(255,236,190,0) 70%); animation: wxHeat ease-in-out infinite; }
+#game.lite .wx-sky::before, #game.lite .wx-front .wfog { animation: none; }
+#game.lite .wx-front .wh { display: none; }
+/* under rain and fog the drifting petals and fireflies take shelter (embers and snow stay) */
+.explore.wx-rain .amb .ap:not(.ap-ember):not(.ap-snow), .explore.wx-storm .amb .ap:not(.ap-ember):not(.ap-snow), .explore.wx-fog .amb .ap-petal { display: none; }
+@keyframes wxRain { from { transform: translate(0, 0) rotate(12deg); } to { transform: translate(-170px, 820px) rotate(12deg); } }
+@keyframes wxSnow { from { transform: translate(0, 0); } to { transform: translate(-300px, 760px); } }
+@keyframes wxSplash { 0% { transform: scale(.2); opacity: .95; } 55% { transform: scale(1); opacity: 0; } 100% { opacity: 0; } }
+@keyframes wxFog { from { transform: translateX(0); } to { transform: translateX(22%); } }
+@keyframes wxHeat { 0% { transform: translateY(0) scaleX(1); opacity: 0; } 30% { opacity: 1; } 100% { transform: translateY(-110px) scaleX(1.7); opacity: 0; } }
+@keyframes wxDrift { from { transform: translateX(-4%); } to { transform: translateX(4%); } }
+
+/* weather icons in their colours */
+.wx-ico.wx-rain { color: #3f95ea; } .wx-ico.wx-storm { color: #8b78f0; } .wx-ico.wx-heat { color: #ff8a2e; } .wx-ico.wx-fog { color: #a3adc2; } .wx-ico.wx-clear { color: #ffb21a; }
+.wx-ico { flex: none; filter: drop-shadow(0 1px 0 rgba(6,11,18,.7)); }
+.zbanner .zb-wx b { color: #fff; }
+/* a move the weather makes stronger */
+.mvb-wx { position: absolute; right: -6px; top: -12px; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: #fff; border: 2px solid #060b12; pointer-events: none; }
+.mvb-wx .ico { width: 19px; height: 19px; filter: none; }
+/* the Star Map: today's weather over an isle */
+.mn-wx { position: absolute; left: -34px; top: -42px; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: #fff; border: 2.5px solid #060b12; box-shadow: 0 3px 0 #060b12; pointer-events: none; }
+.mn-wx .ico { filter: none; }
+
+/* ---------- the falling star ---------- */
+.sf-mark { position: absolute; width: 190px; height: 52px; margin: -26px 0 0 -95px; border-radius: 50%; z-index: 3; pointer-events: none; background: radial-gradient(closest-side, rgba(255,246,170,.9), rgba(255,220,90,.38) 55%, rgba(255,220,90,0)); animation: sfMark .95s ease-in forwards; }
+.sf-meteor { position: absolute; width: 0; height: 0; pointer-events: none; }
+.sf-meteor::before { content: ''; position: absolute; left: -27px; top: -27px; width: 54px; height: 54px; border-radius: 50%; background: radial-gradient(circle, #ffffff 0 30%, #fff6a0 45%, rgba(143,240,255,.6) 65%, rgba(143,240,255,0) 72%); box-shadow: 0 0 36px 14px rgba(255,246,160,.8); animation: sfFall .95s cubic-bezier(.55,0,1,.6) forwards; }
+.sf-meteor::after { content: ''; position: absolute; left: 0; top: -6px; width: 440px; height: 12px; border-radius: 6px; background: linear-gradient(90deg, #ffffff, rgba(143,240,255,.6) 30%, rgba(143,240,255,0)); transform-origin: 0 50%; animation: sfTail .95s cubic-bezier(.55,0,1,.6) forwards; }
+@keyframes sfMark { from { transform: scale(.15); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes sfFall { from { transform: translate(var(--dx), var(--dy)); } to { transform: none; } }
+@keyframes sfTail { from { transform: translate(var(--dx), var(--dy)) rotate(var(--a)); opacity: 1; } 90% { opacity: 1; } to { transform: rotate(var(--a)); opacity: 0; } }
+
+/* the crater: dark hollow, a glow that fades as it cools (--heat 1 → 0), wisps of steam, a ring that runs down */
+.crater { --heat: 1; position: absolute; left: 0; top: 0; width: 0; height: 0; z-index: 3; pointer-events: none; transition: opacity 1.2s; }
+.crater > i, .crater .cr-ring { position: absolute; }
+.crater .cr-hole { left: -86px; top: -23px; width: 172px; height: 46px; border-radius: 50%; background: radial-gradient(ellipse closest-side, #2a2030 0 34%, #4a3a44 62%, rgba(74,58,68,.6) 82%, rgba(74,58,68,0)); }
+.crater .cr-glow { left: -96px; top: -28px; width: 192px; height: 56px; border-radius: 50%; opacity: var(--heat);
+  background: radial-gradient(ellipse closest-side, #fffbe0 0 18%, rgba(255,214,100,.95) 34%, rgba(255,128,60,.72) 60%, rgba(255,90,40,0)); box-shadow: 0 0 34px 6px rgba(255,170,70,calc(var(--heat) * .55)); animation: crPulse 1.1s ease-in-out infinite alternate; }
+.crater .cr-wisp { left: -30px; top: -40px; width: 34px; height: 46px; border-radius: 50%; background: radial-gradient(ellipse closest-side, rgba(255,255,255,.7), rgba(255,255,255,0)); opacity: 0; animation: crWisp 2.2s ease-out infinite; }
+.crater .cr-wisp.b { left: 6px; animation-delay: -1.1s; }
+.crater .cr-ring { left: -110px; top: -32px; width: 220px; height: 64px; overflow: visible; }
+.cr-track { fill: none; stroke: rgba(20,12,40,.38); stroke-width: 5; }
+.cr-arc { fill: none; stroke: #ffe45a; stroke-width: 5.5; stroke-linecap: round; filter: drop-shadow(0 0 4px rgba(255,214,60,.9)); transition: stroke-dasharray .3s linear; }
+.crater.late .cr-arc { stroke: #ff7a4a; filter: drop-shadow(0 0 4px rgba(255,110,60,.9)); }
+.crater.fresh .cr-hole, .crater.fresh .cr-ring { animation: crIn .55s cubic-bezier(.2,1.3,.4,1); }
+.crater.cold { opacity: 0; }
+.cr-t { position: absolute; left: 0; top: 24px; transform: translateX(-50%); min-width: 38px; padding: 1px 8px; border-radius: 12px; background: rgba(43,32,64,.88); border: 2.5px solid #ffe45a; color: #fff6c8; font: italic 900 18px/1.2 var(--f-ui); text-align: center; pointer-events: none; }
+.cr-t.late { border-color: #ff7a4a; color: #ffd0c0; animation: crLate .5s ease-in-out infinite alternate; }
+@keyframes crPulse { from { filter: brightness(1); } to { filter: brightness(1.25); } }
+@keyframes crWisp { 0% { transform: translateY(0) scale(.5); opacity: 0; } 25% { opacity: calc(var(--heat) * .9); } 100% { transform: translateY(-70px) scale(1.4); opacity: 0; } }
+@keyframes crIn { from { transform: scale(.2); } to { transform: none; } }
+@keyframes crLate { from { transform: translateX(-50%) scale(1); } to { transform: translateX(-50%) scale(1.14); } }
+/* the star-born: a golden glow and a twinkle; its name in gold */
+.ent.starw .ent-in { filter: drop-shadow(0 0 10px rgba(255,246,160,.95)) drop-shadow(0 0 3px #ffe45a); }
+.ent.starw .ent-in::before { content: '✦'; position: absolute; left: 10%; top: 8%; color: #fff6a0; font-size: 24px; text-shadow: 0 0 8px #fff; animation: shimmer 1.4s ease-in-out infinite; }
+.hlabel.star { color: #ffe36a; }
+#game.lite .ent.starw .ent-in { filter: drop-shadow(0 0 6px #fff6a0); }
+
+/* portrait: an arrow at the edge of the picture points at a crater off-screen (tap it to run there) */
+.star-ptr { position: absolute; z-index: 8; display: flex; flex-direction: column; align-items: center; width: 62px; padding: 6px 0 5px; transform: translateY(-50%); border: 3px solid #060b12; border-radius: 16px;
+  background: linear-gradient(#fff6b0, #ffc21a); color: #2b2040; font: italic 900 20px/1 var(--f-ui); box-shadow: 0 4px 0 #060b12, 0 0 16px rgba(255,214,60,.7); cursor: pointer; animation: starPtr .7s ease-in-out infinite alternate; }
+.star-ptr::after { content: ''; position: absolute; top: 50%; margin-top: -11px; border: 11px solid transparent; }
+.star-ptr.l { left: calc(10px + var(--pl, 0px)); } .star-ptr.l::after { left: -24px; border-right-color: #060b12; }
+.star-ptr.r { right: 10px; } .star-ptr.r::after { right: -24px; border-left-color: #060b12; }
+.star-ptr[hidden] { display: none; }
+.star-ptr .ico { color: #fff; filter: drop-shadow(0 1px 0 #060b12) drop-shadow(0 -1px 0 #060b12) drop-shadow(1px 0 0 #060b12) drop-shadow(-1px 0 0 #060b12); }
+.star-ptr.late { background: linear-gradient(#ffc0b0, #ff6a4a); }
+@keyframes starPtr { from { margin-left: 0; margin-right: 0; } to { margin-left: -5px; margin-right: -5px; } }
+
+/* ---------- Jett's Weather Station at the Base ---------- */
+.st-screen { position: absolute; left: 34%; top: 55.6%; width: 32%; height: 8.9%; display: flex; align-items: center; justify-content: center; background: #2f86d0; overflow: hidden; pointer-events: none; }
+.st-screen .ico { width: auto; height: 120%; color: #fff !important; filter: none; animation: stBlink 2.4s steps(1) infinite; }
+@keyframes stBlink { 0%, 88% { opacity: 1; } 89%, 100% { opacity: .55; } }
+.ws-bub.wx-bub { gap: 2px; padding: 2px 8px; }
+.ws-bub.wx-bub b { color: #6a6080; font-size: 22px; }
+.home-card.wx-card { width: 372px; gap: 3px; }
+.wxc-row { display: grid; grid-template-columns: 1fr 50px 50px 50px; align-items: center; gap: 2px; min-height: 36px; padding: 0 6px; border-radius: 10px; }
+.wxc-row > b { font: italic 900 17px/1.1 var(--f-ui); color: var(--pn-txt); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wxc-row.here { background: rgba(255,214,60,.28); }
+.wxc-head { min-height: 22px; }
+.home-card .wxc-head small { text-align: center; font: 700 15px/1 var(--f-ui); }
+.wxc-c { display: flex; justify-content: center; align-items: center; height: 34px; }
+.wxc-c.now { background: rgba(255,255,255,.72); border-radius: 10px; }
+.wxc-legend { display: flex; flex-direction: column; gap: 2px; margin: 4px 0 2px; padding-top: 6px; border-top: 2px solid var(--pn-line, rgba(43,32,64,.15)); }
+.home-card .wxc-legend small { display: flex; align-items: center; gap: 6px; font: 700 15px/1.15 var(--f-ui); }
+.port .home-card.wx-card { width: min(372px, calc(100% - 20px)); }

@@ -1,5 +1,25 @@
 # Historia zmian
 
+**Wersja 3.5 — „Niebo nad wyspami”: pogoda i spadające gwiazdy.** Orblingi rodzą się ze spadających gwiazd, a teraz
+widać to w samym świecie. Co kilka minut chodzenia po strefach przez niebo przelatuje gwiazda i spada gdzieś w strefie:
+huk, wstrząs, w kraterze siedzi **Gwiezdny Orbling** — gatunek tej strefy o etap dalej niż zwykle (zawsze rzadszy), poziom
+strefy + 1, świetny potencjał i ×1,5 do łapania (1/12 lśniący). Krater stygnie 60 s — pierścień na ziemi się skraca, pod
+Orblingiem odlicza licznik, a w pionie na krawędzi ekranu pokazuje się strzałka do krateru (stuknięcie = biegnij). Gdy
+ostygnie, Orbling wraca na niebo jako światło. Walka z innym Orblingiem wstrzymuje stygnięcie. Grafika spadającej gwiazdy
+i krateru jak na Gwiezdnym Ołtarzu, żadnego nowego ekranu.
+- **Pogoda na wyspach** (`src/game/weather.js`, `weather.css`): deszcz (ataki Wody +25%, wodne Orblingi ×3), burza (Powietrze;
+  błyski i grzmoty, piorun czasem zostawia gwiezdny okruch; na Mroźnej Wyspie śnieżyca), upał (Ogień; nigdy nocą), mgła
+  (rzadsze gatunki ×3, lśniące ×2). Zmienia się co 6 minut, w tej samej chwili jest taka sama u wszystkich, każda wyspa
+  ma własne prawdopodobieństwa. Chmury przyciemniają tylko niebo — postacie i Orblingi zostają czytelne. Gdy pogoda zmienia
+  się w trakcie, Pip mówi jedno zdanie w dymku.
+- **Pogoda w walce**: walka w strefie ma ten sam deszcz/śnieg/mgłę, wzmocnione ataki mają ikonkę pogody, a pierwsza walka w
+  danej pogodzie mówi w jednym zdaniu, co robi. Arena, legendy i Ołtarz bez pogody.
+- **Stacja pogody Jetta naprawdę prognozuje**: ekranik pokazuje pogodę na wyspie, z której przyszedłeś, dymek „teraz › potem”,
+  a kliknięcie otwiera kartę z prognozą dla wszystkich otwartych wysp na trzy okna (i przycisk zmiany dekoracji).
+- Pogoda na banerze strefy i ikona nad wyspą na Mapie Gwiazd. Słoneczna Wyspa ma czyste niebo do pierwszego złapania.
+- Testy: `?wx=rain|storm|heat|fog|clear` wymusza pogodę, `?star=1` zrzuca gwiazdę po kilku sekundach; `tools/smoke.js` sprawdza
+  prognozę, mnożnik obrażeń, Gwiezdne Orblingi i odstępy między gwiazdami. Zapis bez zmian (nowy licznik `stats.starborn`).
+
 **Wersja 3.4.1 — pora dnia bez „przyciemnionego ekranu”.** Świt (5–8), zmierzch (18–21) i noc (21–5) były
 półprzezroczystą płachtą na całej scenie: postacie, Orblingi i drzewa szarzały, a HUD zostawał jasny — wyglądało to jak
 błąd. Teraz tło strefy jest malowane na daną porę raz, przy wypalaniu (`Scenery` → TIME OF DAY): niebo dostaje własne

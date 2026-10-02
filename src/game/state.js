@@ -89,7 +89,7 @@ const Game = {
       base: { ws: {}, built: ['garden'], decor: { glade: [], yard: [] }, owned: {}, visit: null, fc: '', welcome: 0, stories: {}, sbase: {} },
       stats: {
         battles: 0, wins: 0, wild: 0, tamers: 0, catches: 0, shinies: 0, evolutions: 0, spins: 0,
-        arenaWins: 0, hatched: 0, trained: 0, shards: 0, alphas: 0, crits: 0, supers: 0, excellent: 0, dailies: 0, coinsEarned: 0, pets: 0, harvests: 0,
+        arenaWins: 0, hatched: 0, trained: 0, shards: 0, alphas: 0, starborn: 0, crits: 0, supers: 0, excellent: 0, dailies: 0, coinsEarned: 0, pets: 0, harvests: 0,
         catchEl: { fire: 0, earth: 0, air: 0, water: 0 }, defeatEl: { fire: 0, earth: 0, air: 0, water: 0 },
       },
       settings: { music: true, sfx: true, lang: '' },

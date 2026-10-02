@@ -4,6 +4,7 @@
 const STATUS_IMMUNE = { burn: 'fire', freeze: 'water', shock: 'air', poison: 'earth' };
 
 const BL = {
+  wx: '', // the weather over this battle (3.5): set by the battle scene, see Weather
   fighter(mon, side, o = {}) {
     const st = Game.stats(mon);
     const maxHp = Math.round(st.hp * (o.hpMult || 1));
@@ -51,6 +52,7 @@ const BL = {
     if (crit) mult *= a.sp.sign === 'leo' ? 1.75 : 1.5;
     if (m.cat === 'star' && a.sp.sign === 'libra' && a.mon.hp >= a.maxHp / 2) mult *= 1.15;
     if (charged) mult *= 1.3; // a boss's announced attack
+    if (this.wx) mult *= Weather.boost(this.wx, m.el); // rain lifts Water, a storm Air, a heatwave Fire
     if (a.first && a.sp.sign === 'aries') mult *= 1.3;
     if (a.sp.sign === 'capricorn' && a.mon.hp < a.maxHp / 3) mult *= 1.3;
     if (m.cat === 'phys' && d.sp.sign === 'taurus') mult *= 0.8;
@@ -89,6 +91,7 @@ const BL = {
     else if (e.status) p *= 1.35;
     if (e.mon.lv - Game.teamLevel() > 4) p *= 0.7;
     if (e.alpha) p *= 0.75;
+    if (e.star) p *= 1.5; // star-born: it came down to meet you
     if (e.pity) p *= 1 + 0.15 * e.pity; // every orb it broke out of makes the next throw easier
     return U.clamp(p, 0.04, 1);
   },

@@ -731,3 +731,31 @@ L({
   'it.berry': ['Berry', 'Jagoda'],
   'itd.berry': ['Heals 30% HP. Grows in the Garden of your Base.', 'Leczy 30% HP. Rośnie w Ogrodzie twojej Bazy.'],
 });
+
+/* 3.5 "Skies over the isles": weather and falling stars */
+L({
+  'wx.clear': ['Clear sky', 'Pogodnie'], 'wx.rain': ['Rain', 'Deszcz'], 'wx.storm': ['Storm', 'Burza'], 'wx.storm_snow': ['Blizzard', 'Śnieżyca'],
+  'wx.heat': ['Heatwave', 'Upał'], 'wx.fog': ['Fog', 'Mgła'],
+  'wxe.clear': ['Nothing unusual in the air', 'Nic szczególnego w powietrzu'],
+  'wxe.rain': ['Water moves +{n}% · water Orblings come out', 'Ataki Wody +{n}% · wychodzą wodne Orblingi'],
+  'wxe.storm': ['Air moves +{n}% · air Orblings come out', 'Ataki Powietrza +{n}% · wychodzą Orblingi Powietrza'],
+  'wxe.heat': ['Fire moves +{n}% · fire Orblings come out', 'Ataki Ognia +{n}% · wychodzą ogniste Orblingi'],
+  'wxe.fog': ['Rare Orblings come out · shiny ×2', 'Wychodzą rzadkie Orblingi · lśniące ×2'],
+  'wxs.rain': ['It\'s starting to rain! Water Orblings love it — and Water moves hit harder.', 'Zaczyna padać! Wodne Orblingi to uwielbiają — a ataki Wody biją mocniej.'],
+  'wxs.storm': ['A storm is coming! Air Orblings ride the wind. Lightning sometimes leaves a star shard!', 'Nadciąga burza! Orblingi Powietrza szaleją na wietrze. Piorun czasem zostawia gwiezdny okruch!'],
+  'wxs.storm_snow': ['A blizzard! Air Orblings ride the wind. Lightning sometimes leaves a star shard!', 'Śnieżyca! Orblingi Powietrza szaleją na wietrze. Piorun czasem zostawia gwiezdny okruch!'],
+  'wxs.heat': ['Phew, a heatwave! Fire Orblings come out to bask — and Fire moves burn hotter.', 'Uff, upał! Ogniste Orblingi wychodzą się wygrzewać — a ataki Ognia palą mocniej.'],
+  'wxs.fog': ['Fog is rolling in... Rare Orblings like to hide in it. Keep your eyes open!', 'Nadciąga mgła... Rzadkie Orblingi lubią się w niej kryć. Miej oczy szeroko otwarte!'],
+  'wxs.clear': ['The sky is clearing up.', 'Niebo się przejaśnia.'],
+  'wxb.rain': ['It\'s raining: Water moves are {n}% stronger!', 'Pada deszcz: ataki Wody są silniejsze o {n}%!'],
+  'wxb.storm': ['A storm rages: Air moves are {n}% stronger!', 'Szaleje burza: ataki Powietrza są silniejsze o {n}%!'],
+  'wxb.heat': ['A heatwave: Fire moves are {n}% stronger!', 'Upał: ataki Ognia są silniejsze o {n}%!'],
+  'wxb.fog': ['Thick fog all around...', 'Wokół gęsta mgła...'],
+  'wx.title': ['Weather forecast', 'Prognoza pogody'], 'wx.now': ['Now', 'Teraz'],
+  'sf.see': ['Look, a falling star!', 'Patrz, spadająca gwiazda!'],
+  'sf.landed': ['An Orbling was born from the star: <b>{name}</b>! Run to the crater before it cools ({n} s)!', 'Z gwiazdy narodził się Orbling: <b>{name}</b>! Biegnij do krateru, zanim ostygnie ({n} s)!'],
+  'sf.gone': ['The crater has cooled... the star-born went back up to the sky.', 'Krater ostygł... Gwiezdny Orbling wrócił na niebo.'],
+  'sf.tag': ['Star-born', 'Gwiezdny'],
+  'b.star': ['A star-born <b>{name}</b> leaps out of the crater! Great potential — and easier to catch.', 'Z krateru wyskakuje gwiezdny <b>{name}</b>! Świetny potencjał — i łatwiej go złapać.'],
+  'b.starp': ['Star-born ', 'Gwiezdny '],
+});

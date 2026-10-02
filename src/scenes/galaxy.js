@@ -104,7 +104,9 @@ const GalaxyScene = {
           if (done) por.appendChild(U.el('b', { class: 'mn-star', text: '★' }));
           el.appendChild(por);
         }
-        el.appendChild(U.el('em', { class: 'mn-tip', html: `<b>${guard ? UI.whoName(is.guardian) : t('zone.' + zid)}</b>${guard ? t('gx.guardian') : t('ui.lv') + ' ' + ZONES[zid].lv[0] + '–' + ZONES[zid].lv[1]}` }));
+        const wx = open && !guard ? Weather.now(is.id) : ''; // 3.5: the isle's weather right now
+        el.appendChild(U.el('em', { class: 'mn-tip', html: `<b>${guard ? UI.whoName(is.guardian) : t('zone.' + zid)}</b>${guard ? t('gx.guardian') : t('ui.lv') + ' ' + ZONES[zid].lv[0] + '–' + ZONES[zid].lv[1]}${wx ? ' · ' + Weather.name(wx, is.id) : ''}` }));
+        if (wx && k === 'z1') el.appendChild(U.el('i', { class: 'mn-wx', title: Weather.effect(wx), html: Weather.icon(wx, 24) }));
         if (qn.has(is.id + ':' + k) && !locked) el.appendChild(U.el('i', { class: 'mn-q', text: '!' }));
         n.el = el;
         this.layer.appendChild(el);

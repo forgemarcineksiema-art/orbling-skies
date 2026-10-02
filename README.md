@@ -24,6 +24,7 @@ collect all 12 legendary Zodiac Orblings.
 - Catching as a short timing mini-game
 - 6 isles, trainers, Guardians and a Star Arena with 5 leagues
 - A home Base with workshops that keep working while you are away
+- Weather on the isles (rain, storm, heat, fog) that changes battles and which Orblings come out, and falling stars that leave a rare Orbling in a cooling crater
 - 9 languages, mouse, touch and keyboard, phones in portrait and landscape
 
 No dependencies and no image or audio files: all art and sound are generated in code.

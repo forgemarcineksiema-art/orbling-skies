@@ -9,10 +9,10 @@ const ctx = {
   window: { localStorage: { getItem: k => (k in store ? store[k] : null), setItem: (k, v) => { store[k] = String(v); }, removeItem: k => { delete store[k]; } } },
 };
 vm.createContext(ctx);
-const files = ['src/core/util.js', 'src/core/i18n.js', 'src/core/platform.js', 'src/data/elements.js', 'src/data/moves.js', 'src/data/species.js', 'src/data/items.js', 'src/art/paint.js', 'src/art/scenery.js', 'src/art/props.js', 'src/art/base_art.js', 'src/art/monster_art.js', 'src/art/world_art.js', 'src/data/world.js', 'src/data/arena.js', 'src/data/base.js', 'src/game/state.js', 'src/game/quests.js', 'src/game/camp.js', 'src/game/meta.js', 'src/game/base.js', 'src/game/battle_logic.js'];
+const files = ['src/core/util.js', 'src/core/i18n.js', 'src/core/platform.js', 'src/data/elements.js', 'src/data/moves.js', 'src/data/species.js', 'src/data/items.js', 'src/art/paint.js', 'src/art/scenery.js', 'src/art/props.js', 'src/art/base_art.js', 'src/art/monster_art.js', 'src/art/world_art.js', 'src/data/world.js', 'src/data/arena.js', 'src/data/base.js', 'src/game/state.js', 'src/game/quests.js', 'src/game/camp.js', 'src/game/meta.js', 'src/game/base.js', 'src/game/weather.js', 'src/game/battle_logic.js'];
 const stub = 'const Snd = { musicOn: true, sfxOn: true };\n';
-vm.runInContext(stub + files.map(read).join('\n;\n') + '\n;Object.assign(this,{Base,WORKSHOPS,WS,DECOR,STORIES,FR_HEARTS,WS_CAP_H,Game,Quests,BL,SPECIES,MOVES,TAMERS,ISLES,ISLE,ZONES,LINES,MAIN_QUESTS,isleTamers,LEGEND_LV,SIGNS,Camp,Medals,MEDALS,Login,LOGIN_REWARDS,Arena,ARENA,SAVE_KEY});', ctx);
-const { Base, WORKSHOPS, WS, DECOR, STORIES, FR_HEARTS, WS_CAP_H, Game, Quests, BL, SPECIES, MOVES, TAMERS, ISLES, ISLE, ZONES, LINES, MAIN_QUESTS, isleTamers, Camp, Medals, MEDALS, Login, LOGIN_REWARDS, Arena, ARENA, SAVE_KEY } = ctx;
+vm.runInContext(stub + files.map(read).join('\n;\n') + '\n;Object.assign(this,{Weather,WX_SLOT,WX_KINDS,WX_ODDS,STARFALL,Base,WORKSHOPS,WS,DECOR,STORIES,FR_HEARTS,WS_CAP_H,Game,Quests,BL,SPECIES,MOVES,TAMERS,ISLES,ISLE,ZONES,LINES,MAIN_QUESTS,isleTamers,LEGEND_LV,SIGNS,Camp,Medals,MEDALS,Login,LOGIN_REWARDS,Arena,ARENA,SAVE_KEY});', ctx);
+const { Weather, WX_SLOT, WX_KINDS, WX_ODDS, STARFALL, Base, WORKSHOPS, WS, DECOR, STORIES, FR_HEARTS, WS_CAP_H, Game, Quests, BL, SPECIES, MOVES, TAMERS, ISLES, ISLE, ZONES, LINES, MAIN_QUESTS, isleTamers, Camp, Medals, MEDALS, Login, LOGIN_REWARDS, Arena, ARENA, SAVE_KEY } = ctx;
 
 let fails = 0;
 const ok = (cond, msg) => { if (!cond) { fails++; console.log('FAIL:', msg); } };
@@ -316,6 +316,49 @@ ok(!Game.release(Game.s.team[0]), 'cannot release the last team member');
   old.v = 4; delete old.base;
   const mg = Game.migrate(old);
   ok(mg.v === 5 && !!mg.base && mg.base.built.includes('garden'), 'v4 saves get the Base');
+}
+
+// --- 3.5: weather and falling stars ---
+{
+  const s0 = Weather.slot();
+  ok(Weather.at('coral', s0) === Weather.at('coral', s0), 'the weather of a slot is the same every time');
+  for (const id in WX_ODDS) {
+    const n = {}, N = 2000;
+    for (let i = 0; i < N; i++) { const k = Weather.at(id, s0 + i); n[k] = (n[k] || 0) + 1; }
+    ok((n[''] || 0) > N * 0.25, `${id}: clear skies are common (${n[''] || 0}/${N})`);
+    for (const k in WX_ODDS[id]) ok(n[k] > 0, `${id}: ${k} happens`);
+    for (const k in n) ok(k === '' || k in WX_ODDS[id], `${id}: only its own weathers (${k})`);
+  }
+  ok(Weather.at('frost', s0) !== 'rain' && Weather.at('frost', s0) !== 'heat', 'no rain or heat on the Frost Isle');
+  ok(Weather.now(undefined) === '' && Weather.ofZone('home') === '' && Weather.ofZone('yard') === '', 'no weather at the Base');
+  const fc = Weather.forecast('storm', 3);
+  ok(fc.length === 3 && fc[1].at - fc[0].at === WX_SLOT && fc[1].kind === Weather.at('storm', s0 + 1), 'forecast: the next slots');
+  // battle maths: rain lifts Water moves only
+  const a = BL.fighter(Game.makeMon('finnip', 20, { noShiny: true }), 'p'), d = BL.fighter(Game.makeMon('mossmoo', 20, { noShiny: true }), 'e');
+  const water = Object.keys(MOVES).find(id => MOVES[id].el === 'water' && MOVES[id].pow), phys = Object.keys(MOVES).find(id => !MOVES[id].el && MOVES[id].pow);
+  BL.wx = '';
+  const w0 = BL.damage(a, d, water, false, 0.5).dmg, p0 = BL.damage(a, d, phys, false, 0.5).dmg;
+  BL.wx = 'rain';
+  const w1 = BL.damage(a, d, water, false, 0.5).dmg, p1 = BL.damage(a, d, phys, false, 0.5).dmg;
+  BL.wx = 'heat';
+  const w2 = BL.damage(a, d, water, false, 0.5).dmg;
+  BL.wx = '';
+  ok(w1 > w0 && Math.abs(w1 / w0 - 1.25) < 0.08, `rain: Water moves ×1.25 (${w0} → ${w1})`);
+  ok(p1 === p0 && w2 === w0, 'rain leaves other moves alone; heat leaves Water alone');
+  // the star-born: one of the zone's own, fully grown at the zone's top level + 1; a better catch
+  for (const zid of ['clover', 'shore', 'caldera', 'citadel']) for (let i = 0; i < 30; i++) {
+    const sb = Weather.starborn(zid), z = ZONES[zid];
+    ok(SPECIES[sb.sp] && sb.lv === z.lv[1] + 1 && z.spawns.some(([sp]) => sp === sb.base), `${zid}: star-born ${sb.sp} Lv ${sb.lv} from ${sb.base}`);
+    ok(SPECIES[sb.sp].stage >= 2 && SPECIES[sb.sp].sign === SPECIES[sb.base].sign, `${zid}: the star-born ${sb.sp} is a rarer stage of ${sb.base}`);
+  }
+  const e = BL.fighter(Game.makeMon('sunkit', 10, { noShiny: true }), 'e');
+  const c0 = BL.catchChance(e, 'orb', 1); e.star = true;
+  ok(BL.catchChance(e, 'orb', 1) > c0, 'a star-born is easier to catch');
+  Weather.starT = null;
+  let ticks = 0; while (!Weather.starTick(1)) ticks++;
+  ok(ticks >= STARFALL.first[0] - 1 && ticks <= STARFALL.first[1], `the first star falls after ${ticks} s`);
+  ticks = 0; while (!Weather.starTick(1)) ticks++;
+  ok(ticks >= STARFALL.every[0] - 1 && ticks <= STARFALL.every[1], `then every few minutes (${ticks} s)`);
 }
 
 console.log(fails ? `${fails} failure(s)` : 'smoke OK');

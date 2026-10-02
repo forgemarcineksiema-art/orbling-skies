@@ -59,6 +59,9 @@ const ExploreScene = {
     // the local time of day: the backdrop is painted for the hour (moon and stars, a sunset, a misty morning) and the
     // sprites take a light grade in CSS (.tod-*) — never a dark sheet over the whole scene (3.4.1)
     this.tod = zoneTod(z, this.phase); this.meteorT = U.rf(4, 10);
+    // 3.5: the isle's weather (it can turn while you are here) and the falling star's crater
+    this.wx = home ? '' : Weather.ofZone(zid); this.wxT = 1; this.boltT = U.rf(4, 9);
+    this.crater = null; this.falling = false; this.starPtr = null; this.epoch = (this.epoch || 0) + 1;
     await WArt.bake(z.biome, z.seed, this.tod);
     const root = UI.scene;
     root.className = 'explore b-' + z.biome + (this.tod ? ' tod-' + this.tod : '');
@@ -67,11 +70,15 @@ const ExploreScene = {
     const stage = this.stageEl = U.el('div', { class: 'stage16' });
     root.appendChild(stage);
     stage.appendChild(WArt.bgImg(z.biome, z.seed, 'ex-bg', this.tod));
+    this.wxSky = U.el('div'); this.wxFront = U.el('div');
+    stage.appendChild(this.wxSky);
     this.amb = U.el('div', { class: 'amb' });
     stage.appendChild(this.amb);
     this.ambient();
     this.world = U.el('div', { class: 'world' });
     stage.appendChild(this.world);
+    stage.appendChild(this.wxFront);
+    this.paintWeather(false);
     this.marker = U.el('div', { class: 'tapmark' });
     this.world.appendChild(this.marker);
 
@@ -109,6 +116,8 @@ const ExploreScene = {
         if (w.tutorial && this.tut) this.markTut(e);
         if (w.id === this.saved.fighting) { e.state = 'idle'; e.t = 2; e.tx = U.clamp(e.x + 200 * (e.x > px ? 1 : -1), this.walk.x0 + 60, this.walk.x1 - 60); }
       }
+      const c = this.saved.crater; // the star you did not go for is still waiting in its crater
+      if (c && c.left > 0) this.makeCrater(c.x, c.y, c.left, c.sb, false);
     } else if (home) { if (this.area === 'yard') this.spawnYard(); else this.spawnOwn(); }
     else if (this.tut) this.tutorialWild();
     else for (let i = 0; i < z.max; i++) this.spawnWild(false);
@@ -122,7 +131,7 @@ const ExploreScene = {
 
     UI.hudBuild();
     UI.hudShow(true);
-    if (!p.returning) UI.zoneBanner(z, this.night);
+    if (!p.returning) UI.zoneBanner(z, this.night, this.wx);
     Platform.context({ zone: zid, isle: z.isle || 'home' });
     if ((firstVisit || p.arrive) && !home && ISLE[z.isle].zones[0] === zid) Platform.track('isle', z.isle, 'start'); // arrive: from the first battle
     if (home && firstVisit) Platform.track('base', this.area, 'start');
@@ -400,6 +409,7 @@ const ExploreScene = {
     for (const k of ['ship', 'pod', 'chest', 'obs', 'start', 'treehouse', 'hatch', 'dojo', 'bush']) if (z[k]) pts.push(z[k]);
     for (const ex of z.exits) pts.push([ex[1], ex[2]]);
     if (z.block) pts.push(...z.block);
+    if (this.crater) pts.push([this.crater.x, this.crater.y]);
     return pts;
   },
   /** is (x, y) inside an ellipse nobody may enter (the pond)? → the nearest point on its rim, else null */
@@ -524,7 +534,7 @@ const ExploreScene = {
   pickSpecies() {
     const asc = Game.ascendant();
     const here = sp => this.wilds.filter(w => (w.base || w.sp) === sp).length;
-    const pool = this.zone.spawns.map(([sp, w]) => [sp, (SPECIES[sp].sign === asc ? w * 1.5 : w) / Math.pow(4, here(sp))]);
+    const pool = this.zone.spawns.map(([sp, w]) => [sp, (SPECIES[sp].sign === asc ? w * 1.5 : w) * Weather.spawnK(this.wx, sp, w) / Math.pow(4, here(sp))]);
     return U.weighted(pool);
   },
   spawnWild(pop) {
@@ -535,7 +545,7 @@ const ExploreScene = {
     let base = this.pickSpecies();
     for (let i = 0; i < 8 && tw && base === (tw.base || tw.sp); i++) base = this.pickSpecies();
     const [sp, lv] = Game.wildForm(base, alpha ? z.lv[1] + 2 : U.ri(z.lv[0], z.lv[1]), alpha);
-    const shiny = Math.random() < (this.night ? 2 : 1) / SHINY_ODDS;
+    const shiny = Math.random() < (this.night ? 2 : 1) * Weather.shinyK(this.wx) / SHINY_ODDS;
     let x, y, tries = 0;
     const px = this.player ? this.player.x : z.start[0], py = this.player ? this.player.y : z.start[1];
     const bad = (x, y) => U.dist(x, y, px, py) < 220 || this.exclusions().some(([a, b]) => U.dist(a, b, x, y) < 110) || this.wilds.some(o => U.dist(o.x, o.y, x, y) < 120) || (tw && U.dist(x, y, tw.x, tw.y) < 340);
@@ -734,7 +744,7 @@ const ExploreScene = {
 
     for (const w of this.wilds) this.wildLife(w, dt, P, locked);
     if (this.home && (this.baseT = (this.baseT || 0) - dt) <= 0) { this.baseT = 3; this.refreshBase(); }
-    if (this.wilds.length < (this.tut ? Math.min(3, this.zone.max) : this.zone.max) && !locked) {
+    if (this.wilds.filter(w => !w.star).length < (this.tut ? Math.min(3, this.zone.max) : this.zone.max) && !locked) {
       this.spawnT -= dt;
       if (this.spawnT <= 0) { this.spawnWild(true); this.spawnT = U.rf(3, 6); }
     }
@@ -754,6 +764,8 @@ const ExploreScene = {
       this.updateShards(dt);
       this.updateEmotes(dt);
       this.updateSky(dt);
+      this.updateWeather(dt);
+      this.updateStar(dt);
     }
     // Pip drifts after the tamer and leans into the motion
     const pt = [P.x - P.face * 66, P.y - 124];
@@ -962,10 +974,12 @@ const ExploreScene = {
     const P = this.player;
     for (const s of this.shards.slice()) if (U.dist(P.x, P.y, s.x, s.y) < 48) this.collectShard(s);
   },
-  spawnShard() {
+  /** a shard somewhere in the zone (or at `at`: where lightning struck) */
+  spawnShard(at) {
     let x, y, tries = 0;
     const P = this.player;
-    do { x = U.rf(this.walk.x0 + 60, this.walk.x1 - 60); y = U.rf(this.walk.y0 + 20, this.walk.y1 - 20); tries++; }
+    if (at) [x, y] = at;
+    else do { x = U.rf(this.walk.x0 + 60, this.walk.x1 - 60); y = U.rf(this.walk.y0 + 20, this.walk.y1 - 20); tries++; }
     while (tries < 30 && (U.dist(x, y, P.x, P.y) < 180 || this.exclusions().some(([a, b]) => U.dist(a, b, x, y) < 100) || this.shards.some(o => U.dist(o.x, o.y, x, y) < 200)));
     const e = this.addEnt({ type: 'shard', x, y, w: 46, h: 46, src: WArt.item('shard'), foot: -14, sw: 30, interact: () => {}, ap: [x, y] });
     this.place(e);
@@ -1000,12 +1014,186 @@ const ExploreScene = {
   },
   /* ---------------- a shooting star now and then, where a night sky is open overhead ---------------- */
   updateSky(dt) {
-    if (this.tod !== 'night' || !NIGHT_SKY.includes(this.zone.biome) || (this.meteorT -= dt) > 0) return;
+    if (this.tod !== 'night' || this.wx || !NIGHT_SKY.includes(this.zone.biome) || (this.meteorT -= dt) > 0) return; // (not through clouds or fog)
     this.meteorT = U.rf(12, 26);
     const m = U.el('i', { class: 'shoot' });
     m.style.left = U.rf(80, 900) + 'px'; m.style.top = U.rf(24, 150) + 'px';
     this.amb.appendChild(m);
     setTimeout(() => m.remove(), 1300);
+  },
+  /* ---------------- weather (3.5): rain, storm, heat or fog over the isle; it turns every few minutes ---------------- */
+  paintWeather(fade) {
+    const { sky, front } = Weather.layers(this.wx, this.zone.biome, { y0: this.walk.y0, y1: this.walk.y1 + 40 });
+    for (const [old, nu] of [[this.wxSky, sky], [this.wxFront, front]]) {
+      old.replaceWith(nu);
+      if (fade) { U.anim(nu, [{ opacity: 0 }, { opacity: 1 }], { duration: 1600 }); if (old.className) { old.classList.add('wx-old'); nu.after(old); U.anim(old, [{ opacity: 1 }, { opacity: 0 }], { duration: 1600 }).then(() => old.remove()); } }
+    }
+    this.wxSky = sky; this.wxFront = front;
+    for (const k in WX_KINDS) UI.scene.classList.toggle('wx-' + k, this.wx === k);
+  },
+  updateWeather(dt) {
+    if (this.home) return;
+    if ((this.wxT -= dt) <= 0) {
+      this.wxT = 1;
+      const k = Weather.ofZone(this.zone.id);
+      if (k !== this.wx) this.setWeather(k);
+    }
+    if (this.wx === 'storm' && (this.boltT -= dt) <= 0) { this.boltT = U.rf(6, 13); this.lightning(); }
+  },
+  /** the weather turns while you are here: it rolls in (or clears) and Pip says what it means */
+  setWeather(k) {
+    const was = this.wx;
+    this.wx = k;
+    this.paintWeather(true);
+    if (k === 'storm') Snd.play('thunder');
+    if (k) this.pipSay(Weather.icon(k, 22) + ' ' + t('wxs.' + k + (k === 'storm' && Weather.snowy(this.zone.biome) ? '_snow' : '')), 6000);
+    else if (was) this.pipSay(Weather.icon('', 22, this.night) + ' ' + t('wxs.clear'), 4000);
+  },
+  /** thunder and a flash; now and then a bolt strikes the ground and leaves a star shard where it hit */
+  lightning() {
+    const W0 = this.walk, P = this.player;
+    const x = U.rf(W0.x0 + 90, W0.x1 - 90), y = U.rf(W0.y0 + 30, W0.y1 - 30);
+    const ground = Math.random() < 0.4 && this.shards.length < 3 && Game.s.flags.tutCatch && U.dist(x, y, P.x, P.y) > 160 && !this.noGo(x, y) && this.exclusions().every(([a, b]) => U.dist(a, b, x, y) > 100);
+    FX.flash('#eef4ff', ground ? 0.42 : 0.24, 300);
+    setTimeout(() => Snd.play(ground ? 'thunder' : 'rumble'), ground ? 0 : U.ri(150, 500));
+    if (!ground) return;
+    FX.bolt(x, y - 6, { sy: -40, color: '#fff6a0', w: 10, dur: 420 });
+    const ep = this.epoch;
+    setTimeout(() => {
+      if (UI.cur !== this || !this.running || ep !== this.epoch) return;
+      if (VFX.ok()) { VFX.sparks(x, y - 8, 14, ['#ffffff', '#fff066', '#8ff0ff'], { spd: [140, 380], ang: [-Math.PI * 0.95, -Math.PI * 0.05] }); VFX.smoke(x, y - 4, 5, '#5a6070', { rx: 30 }); }
+      else UI.burst(x, y - 20, ['#fff6a0', '#ffffff'], 10, 90);
+      for (const w of this.wilds) if (!w.post && U.dist(w.x, w.y, x, y) < 220) { this.act(w, 'hop'); this.emote(w, '!', 'red'); }
+      this.spawnShard([x, y]);
+    }, 140);
+  },
+
+  /* ---------------- the falling star (3.5): a rare Orbling in a warm crater, until it cools down ---------------- */
+  updateStar(dt) {
+    if (this.home || this.tut || !Game.s.flags.tutCatch) return;
+    if (this.crater) { this.coolCrater(this.crater, dt); return; }
+    if (!this.falling && Weather.starTick(dt)) this.starfall();
+  },
+  /** a star streaks across the sky and crashes into the zone, a short run from you */
+  async starfall() {
+    const W0 = this.walk, P = this.player, ex = this.exclusions(), ep = this.epoch;
+    const props = this.ents.filter(e => e.type === 'prop');
+    // the clearest of a few spots (the ground is a narrow band): a short run from you, clear of tamers, the ship, the
+    // pod, the Orblings and the trees
+    const room = (x, y) => Math.min(U.dist(x, y, P.x, P.y) / 260, ...ex.map(([a, b]) => U.dist(a, b, x, y) / 120), ...this.wilds.map(w => U.dist(w.x, w.y, x, y) / 100), ...props.map(e => U.dist(e.x, e.y, x, y) / 80));
+    let x = 640, y = (W0.y0 + W0.y1) / 2, best = -1;
+    for (let i = 0; i < 80 && best < 1; i++) {
+      const tx = U.rf(W0.x0 + 110, W0.x1 - 110), ty = U.rf(W0.y0 + 50, W0.y1 - 30), r = this.noGo(tx, ty) ? -1 : room(tx, ty);
+      if (r > best) { best = r; x = tx; y = ty; }
+    }
+    this.falling = true;
+    const sb = Weather.starborn(this.zone.id);
+    MonArt.prefetchSet(sb.sp, true);
+    Snd.play('meteor');
+    this.pipSay(WArt.icon('star', 22) + ' ' + t('sf.see'), 3000);
+    // a glow grows where it will land while the star comes down from the far side of the sky
+    const mark = U.el('i', { class: 'sf-mark' });
+    mark.style.left = x + 'px'; mark.style.top = y + 'px';
+    const dx = (x > 640 ? -1 : 1) * 620, dy = -(y + 140);
+    const m = U.el('i', { class: 'sf-meteor', style: { left: x + 'px', top: y + 'px', zIndex: 2000 } });
+    m.style.setProperty('--dx', dx + 'px'); m.style.setProperty('--dy', dy + 'px'); m.style.setProperty('--a', Math.atan2(dy, dx).toFixed(4) + 'rad');
+    this.world.append(mark, m);
+    await U.sleep(950);
+    m.remove(); mark.remove();
+    this.falling = false;
+    if (UI.cur !== this || !this.running || ep !== this.epoch) return; // a battle started meanwhile: the star is lost
+    this.impact(x, y);
+    this.makeCrater(x, y, STARFALL.cool, sb, true);
+  },
+  impact(x, y) {
+    Snd.play('boom');
+    FX.shake(10, 420);
+    if (VFX.ok()) {
+      VFX.flash(x, y - 20, '#fff6c8', 260, 420);
+      VFX.ring(x, y, '#fff6a0', 20, 220, 560, 8, { flat: 0.3 });
+      VFX.sparks(x, y - 10, 26, ['#ffffff', '#fff066', '#8ff0ff'], { spd: [200, 560], ang: [-Math.PI * 0.95, -Math.PI * 0.05] });
+      VFX.smoke(x, y - 6, 12, '#5a6070', { rx: 70, size: [24, 40] });
+    } else UI.burst(x, y - 20, ['#fff6a0', '#ffffff', '#8ff0ff'], 18, 160);
+    // the Orblings around jump at the bang
+    for (const w of this.wilds) if (!w.post && U.dist(w.x, w.y, x, y) < 340) { this.act(w, 'hop'); this.emote(w, '!', 'red'); }
+  },
+  /** the crater: a glowing hollow with a ring on the ground that runs down as it cools, and the star-born in it */
+  makeCrater(x, y, left, sb, fresh) {
+    const ring = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    ring.setAttribute('viewBox', '0 0 220 64'); ring.setAttribute('class', 'cr-ring');
+    ring.innerHTML = '<ellipse class="cr-track" cx="110" cy="32" rx="102" ry="26"/><ellipse class="cr-arc" cx="110" cy="32" rx="102" ry="26" pathLength="100" transform="rotate(180 110 32)"/>';
+    const tEl = U.el('b', { class: 'cr-t' });
+    const el = U.el('div', { class: 'crater' + (fresh ? ' fresh' : '') }, ring, U.el('i', { class: 'cr-hole' }), U.el('i', { class: 'cr-glow' }), U.el('i', { class: 'cr-wisp' }), U.el('i', { class: 'cr-wisp b' }));
+    el.style.transform = `translate(${x}px, ${y}px) scale(${depthScale(y).toFixed(3)})`; // (on the ground: under everyone)
+    this.world.appendChild(el);
+    const w = this.addWild(sb.sp, sb.lv, sb.shiny, x, y + 4, false, false);
+    w.base = sb.base;
+    this.starify(w);
+    w.el.appendChild(tEl); // the seconds left, at its feet
+    const c = this.crater = { x, y, left, max: STARFALL.cool, sb, el, w, arc: ring.lastChild, tEl, shown: null };
+    this.coolCrater(c, 0);
+    if (fresh) {
+      // it leaps out of the smoke, sees you — "!"
+      U.anim(w.imgEl, [{ transform: 'translateY(30px) scale(.3)', filter: 'brightness(4)' }, { transform: 'translateY(-90px) scale(1.05)', filter: 'brightness(1.6)', offset: 0.45 }, { transform: 'scale(1.12, .88)', filter: 'none', offset: 0.8 }, { transform: 'none' }], { duration: 650, easing: 'cubic-bezier(.2,.9,.3,1)' });
+      Snd.cry(sb.sp);
+      setTimeout(() => { if (this.crater === c) { this.emote(w, '!', 'red'); Snd.play('notice'); } }, 500);
+      this.pipSay(WArt.icon('star', 22) + ' ' + t('sf.landed', { name: SPECIES[sb.sp].name, n: STARFALL.cool }) + (sb.shiny ? ' <b class="shinytxt">✦ ' + t('b.shiny') + '</b>' : ''), 6500);
+    }
+  },
+  /** the star-born: glowing, golden name, it waits in its crater and watches you come */
+  starify(w) {
+    const S = SPECIES[w.sp];
+    w.star = true; w.hold = true;
+    w.el.classList.add('starw');
+    w.labelEl.classList.add('star');
+    w.labelEl.innerHTML = WArt.icon('star', 18) + S.name + ` <small>${t('sf.tag')} · ${t('ui.lv')} ${w.lv}</small>`;
+  },
+  coolCrater(c, dt) {
+    c.left = Math.max(0, c.left - dt);
+    const k = c.left / c.max, n = Math.ceil(c.left);
+    c.el.style.setProperty('--heat', k.toFixed(3));
+    c.arc.style.strokeDasharray = (k * 100).toFixed(2) + ' 100';
+    if (n !== c.shown) {
+      c.shown = n; c.tEl.textContent = n;
+      c.el.classList.toggle('late', n <= 10); c.tEl.classList.toggle('late', n <= 10);
+      if (dt && n <= 5 && n > 0) Snd.play('tick');
+    }
+    this.starPointer(c);
+    if (c.left <= 0) this.starGone(c);
+  },
+  /** portrait: the crater can be off the picture — an arrow at the edge points at it (tap it to run there) */
+  starPointer(c) {
+    const cam = this.cam, sx = cam && c ? c.x - cam.x : null;
+    const side = sx == null ? 0 : sx < 40 ? -1 : sx > cam.vw - 40 ? 1 : 0;
+    if (!side) { if (this.starPtr) this.starPtr.hidden = true; return; }
+    if (!this.starPtr) {
+      this.starPtr = U.el('div', { class: 'star-ptr' }, U.el('span', { html: WArt.icon('star', 30) }), U.el('b'));
+      UI.scene.appendChild(this.starPtr);
+    }
+    const p = this.starPtr, [, sy] = this.toScreen(c.x, c.y - 70);
+    p.hidden = false;
+    p.className = 'star-ptr ' + (side < 0 ? 'l' : 'r') + (c.left <= 10 ? ' late' : '');
+    p.style.top = U.clamp(sy, 210, UI.H - 220).toFixed(0) + 'px';
+    p.lastChild.textContent = Math.ceil(c.left);
+  },
+  /** the crater went cold: the star-born turns back into light and returns to the sky */
+  starGone(c) {
+    this.crater = null;
+    this.starPointer(null);
+    const w = c.w;
+    if (this.chase === w) this.chase = null;
+    if (this.wilds.includes(w)) {
+      const hy = w.y - this.headY(w) * depthScale(w.y) * 0.5, col = EL_GLOW[SPECIES[w.sp].el];
+      if (VFX.ok()) {
+        VFX.dissolve(w.x, hy, [col, '#ffffff', '#fff6a0']);
+        VFX.shot(q => [w.x + q * 90, hy - q * (hy + 60)], 800, { size: 9, cols: [col, '#ffffff'], trail: (px, py) => VFX.part({ x: px, y: py, shape: 'glow', cols: [col], s0: 10, s1: 1, life: 420 }) });
+      }
+      Snd.play('warp');
+      this.removeEnt(w);
+    }
+    c.el.classList.add('cold');
+    setTimeout(() => c.el.remove(), 1400);
+    this.pipSay(t('sf.gone'), 4500);
   },
   emote(e, ch, cls) {
     if (e.emoteEl) e.emoteEl.remove();
@@ -1038,6 +1226,7 @@ const ExploreScene = {
   onDown(e) {
     if (this.busy || UI.anyModal() || UI.busyGo || Platform.adActive) return;
     if (e.target.closest('#hud .hud-el')) return;
+    if (e.target.closest('.star-ptr')) { if (this.crater) this.crater.w.interact(); return; } // run to the crater off-screen
     const entEl = e.target.closest('.ent.clickable');
     if (entEl) {
       const ent = this.byId[entEl.dataset.id];
@@ -1097,19 +1286,21 @@ const ExploreScene = {
   saveState(fightW) {
     this.saved = {
       zone: this.zone.id, px: this.player.x, py: this.player.y, fighting: fightW ? fightW.id : null,
-      wilds: this.wilds.map(w => ({ id: w.id, sp: w.sp, base: w.base, lv: w.lv, shiny: w.shiny, alpha: w.alpha, x: w.x, y: w.y, tutorial: !!w.tutorial })),
+      wilds: this.wilds.filter(w => !w.star).map(w => ({ id: w.id, sp: w.sp, base: w.base, lv: w.lv, shiny: w.shiny, alpha: w.alpha, x: w.x, y: w.y, tutorial: !!w.tutorial })),
+      // the star's crater keeps cooling only while you are here; once you battle the star-born itself it is gone
+      crater: this.crater && this.crater.w !== fightW ? { x: this.crater.x, y: this.crater.y, left: this.crater.left, sb: this.crater.sb } : null,
     };
   },
   async startWild(w) {
     if (this.busy) return;
     if (!Game.teamAlive()) { this.busy = true; await UI.talk([{ who: 'pip', text: t('pip.needheal') }]); this.busy = false; return; }
     this.busy = true;
-    const mon = Game.makeMon(w.sp, w.lv, { shiny: w.shiny, potMin: w.alpha ? 1.02 : 0 });
+    const mon = Game.makeMon(w.sp, w.lv, { shiny: w.shiny, potMin: w.alpha ? 1.02 : w.star ? 1 : 0 });
     this.saveState(w);
     if (w.tutEl) w.tutEl.classList.add('out');
     Snd.play('pop');
     await this.encounterFx(w);
-    UI.go(BattleScene, { kind: 'wild', enemies: [mon], zone: this.zone.id, tutorial: !!w.tutorial, alpha: w.alpha, visitor: !!w.visitor }, { trans: 'battle' });
+    UI.go(BattleScene, { kind: 'wild', enemies: [mon], zone: this.zone.id, tutorial: !!w.tutorial, alpha: w.alpha, visitor: !!w.visitor, star: !!w.star }, { trans: 'battle' });
   },
   async encounterFx(w) {
     const fl = U.el('div', { class: 'encounter' });
@@ -1252,7 +1443,7 @@ const ExploreScene = {
   },
   buildDecor() {
     for (const e of this.decoEnts) this.removeEnt(e);
-    this.decoEnts = [];
+    this.decoEnts = []; this.stationEnt = null;
     (DECOR_SPOTS[this.area] || []).forEach(([x, y], i) => {
       const id = Base.at(this.area, i), ap = [x + (x > 640 ? -84 : 84), y + 16];
       let e;
@@ -1260,6 +1451,7 @@ const ExploreScene = {
         const [type, v, sc] = DECOR_ART[id] || [id, 0, 1], pr = WArt.prop(type, v), k = (sc || 1) * 0.9;
         e = this.addEnt({ type: 'deco', x, y, w: pr.w * k, h: pr.h * k, src: pr.url, foot: 4, sw: pr.w * k * 0.6, interact: () => this.useSpot(i), ap });
         this.tag(e, t('dc.' + id));
+        if (id === 'station') this.buildStation(e, i);
         if (id === 'balloon') e.el.classList.add('bob');
         if (id === 'pinwheel') e.el.classList.add('sway');
       } else {
@@ -1271,6 +1463,47 @@ const ExploreScene = {
     });
   },
   useSpot(i) { if (!this.busy) Menus.decorSpot(this.area, i, () => this.buildDecor()); },
+  /** Jett's Weather Station (3.5) really forecasts: its screen shows the weather on the isle you came from, the bubble
+   *  what comes next, and a tap opens the forecast for every isle you can fly to */
+  buildStation(e, i) {
+    e.interact = () => { if (!this.busy) this.stationCard(e, i); };
+    e.wxScreen = U.el('div', { class: 'st-screen' });
+    e.inner.appendChild(e.wxScreen);
+    e.bub = U.el('div', { class: 'ws-bub wx-bub' });
+    e.bub.style.bottom = (e.h - (e.foot || 0) + 6) + 'px';
+    e.el.appendChild(e.bub);
+    this.stationEnt = e;
+    this.updStation();
+  },
+  updStation() {
+    const e = this.stationEnt;
+    if (!e) return;
+    const isle = ZONES[Game.s.loc.zone] ? ZONES[Game.s.loc.zone].isle : 'sunny', [a, b] = Weather.forecast(isle, 2), key = isle + a.kind + b.kind;
+    if (e.wxKey === key) return;
+    e.wxKey = key;
+    e.wxScreen.innerHTML = Weather.icon(a.kind, 22, this.night);
+    e.bub.innerHTML = Weather.icon(a.kind, 26, this.night) + '<b>›</b>' + Weather.icon(b.kind, 26, this.night);
+    e.bub.title = t('isle.' + isle);
+  },
+  stationCard(e, i) {
+    this.closeHomeCard();
+    Snd.play('select');
+    const here = ZONES[Game.s.loc.zone] ? ZONES[Game.s.loc.zone].isle : null, left = Weather.left();
+    const cell = (kind, isle, k) => U.el('span', { class: 'wxc-c' + (k ? '' : ' now'), title: Weather.name(kind, isle), html: Weather.icon(kind, k ? 24 : 28, this.night) });
+    const rows = ISLES.filter(is => Game.isleUnlocked(is.id)).map(is => U.el('div', { class: 'wxc-row' + (is.id === here ? ' here' : '') },
+      U.el('b', { text: t('isle.' + is.id) }), ...Weather.forecast(is.id, 3).map((x, k) => cell(x.kind, is.id, k))));
+    const card = U.el('div', { class: 'home-card wx-card' },
+      U.el('div', { class: 'hc-top' }, U.el('span', { html: WArt.icon('storm', 26) }), U.el('b', { text: t('wx.title') })),
+      U.el('div', { class: 'wxc-row wxc-head' }, U.el('b'), U.el('small', { text: t('wx.now') }), U.el('small', { text: U.fmtTime(left) }), U.el('small', { text: U.fmtTime(left + WX_SLOT) })),
+      ...rows,
+      U.el('div', { class: 'wxc-legend' }, ...Object.keys(WX_KINDS).map(k => U.el('small', { html: Weather.icon(k, 20) + '<span>' + Weather.effect(k) + '</span>' }))),
+      U.el('div', { class: 'row tight' }, U.el('button', { class: 'btn sm', html: WArt.icon('hammer', 18) + ' ' + t('dc.spot'), onclick: () => { this.closeHomeCard(); this.useSpot(i); } })));
+    UI.scene.appendChild(card);
+    const [x, y] = this.toScreen(e.x, e.y - e.h * depthScale(e.y));
+    card.style.left = U.clamp(x - card.offsetWidth / 2, 10, UI.W - card.offsetWidth - 10) + 'px';
+    card.style.top = U.clamp(y - 40, 70, Math.max(70, UI.H - card.offsetHeight - 10)) + 'px';
+    this.hcard = card;
+  },
   /** a workshop: built (its art, the worker at its post and a bubble with what is ready) or a building site */
   buildWorkshop(W) {
     const old = this.wsEnts[W.id];
@@ -1323,6 +1556,7 @@ const ExploreScene = {
   refreshBase() {
     if (!this.home || UI.cur !== this) return;
     Camp.cleanup(); Base.cleanup();
+    this.updStation();
     // the scene follows jobs changed elsewhere (the team menu, a details card, the camp window)
     if (this.area === 'yard') {
       for (const W of WORKSHOPS) {

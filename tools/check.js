@@ -58,6 +58,10 @@ for (const k of ['sunkit', 'finnip', 'mossmoo', 'breezle']) need('std.' + k);
 for (let i = 1; i <= 5; i++) need('prof.tip' + i);
 for (const k of ['burn', 'poison']) need('b.hurt.' + k);
 for (const k of ['lv', 'new', 'sign']) need('tm.sort_' + k);
+// 3.5: weather and falling stars
+for (const k of ['clear', 'rain', 'storm', 'storm_snow', 'heat', 'fog']) { need('wx.' + k); need('wxs.' + k); }
+for (const k of ['clear', 'rain', 'storm', 'heat', 'fog']) need('wxe.' + k);
+for (const k of ['rain', 'storm', 'heat', 'fog']) need('wxb.' + k);
 
 // 3.0: the Base
 for (const W of WORKSHOPS) { need('ws.' + W.id); need('ws.d_' + W.id); if (!PropArt.PROP[W.id]) errors.push('no workshop art ' + W.id); if (W.out !== 'coins' && !ITEMS[W.out]) errors.push('bad workshop output ' + W.out); }

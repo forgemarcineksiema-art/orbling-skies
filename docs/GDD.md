@@ -161,6 +161,8 @@ Każda strefa: 4–5 wędrujących dzikich Orblingów (odradzają się), 2 trene
 
 **Życie świata (v2)**: dzikie Orblingi reagują na zbliżającego się gracza („!”), nucą i machają (♪ ♥); 4% szans na **Alfę** — większą, złotą, o 2 poz. silniejszą (×1,3 HP, sprytne AI, ×2 monety, ×1,5 XP, trudniejsza do złapania, lepszy potencjał); po strefie pojawiają się **gwiezdne okruchy** (monety, czasem kula); pora dnia wg zegara gracza (świt / dzień / zmierzch / noc; od 3.4.1 tło jest malowane na daną porę — księżyc i gwiazdy, zachód słońca, poranna mgła, światła w oknach — a postacie zostają czytelne; nocą świetliki, spadające gwiazdy i lśniące ×2).
 
+**Niebo nad wyspami (3.5, `src/game/weather.js`)**: każda wyspa ma pogodę, która zmienia się co 6 minut i jest taka sama dla wszystkich graczy w tej samej chwili (los z hasza wyspy i 6-minutowego okna zegara), więc da się ją przewidzieć. **Deszcz** wzmacnia ataki Wody o 25% i wywabia wodne Orblingi (×3), **burza** to samo dla Powietrza (a piorun czasem zostawia gwiezdny okruch; na Mroźnej Wyspie to śnieżyca), **upał** dla Ognia (nigdy nocą), **mgła** wywabia rzadsze gatunki i podwaja szansę na lśniące. Częstość zależy od wyspy (Wyspa Burz: burze, Wyspa Żaru: upał i popiół, Mroźna: mgła i śnieżyce, Zaćmienia: mgła). Chmury przyciemniają tylko niebo, postacie zostają czytelne. Pogoda wchodzi do walki w strefie (ikona na wzmocnionych atakach, jedno zdanie na start), widać ją na banerze strefy, na Mapie Gwiazd i na **Stacji pogody Jetta** w Bazie (ekranik, dymek „teraz › potem”, po kliknięciu prognoza dla wszystkich otwartych wysp na 3 okna). Słoneczna Wyspa ma czyste niebo do pierwszego złapania. **Spadająca gwiazda**: pierwsza po ~70–110 s chodzenia po strefach, potem co ~2,5–4 min (czas leci tylko w strefie, bez okien); spada gdzieś w strefie w krótkim biegu od gracza, w kraterze siedzi **Gwiezdny Orbling** — gatunek ze strefy o etap dalej niż zwykle (więc zawsze rzadszy), poz. strefy + 1, świetny potencjał, ×1,5 do łapania, 1/12 lśniący. Krater stygnie **60 s** (pierścień na ziemi i licznik; w pionie strzałka na krawędzi ekranu prowadzi do krateru); potem Orbling wraca na niebo. Walka z kimś innym wstrzymuje stygnięcie (krater czeka po powrocie). Testy: `?wx=rain|storm|heat|fog|clear`, `?star=1`.
+
 ### 4.6a Balans (zmierzony symulacjami)
 - `node tools/sim.js` — pojedynki 1v1, `node tools/sim_teams.js` — walki 3v3 ze Strażnikami (AI kontra AI, bez przedmiotów i zmian).
 - Walki trwają zwykle **2–4 tury**; różnica 2 poziomów zmienia wynik z ~50% na ~90%.
@@ -302,7 +304,7 @@ Czysty JavaScript (bez frameworka), klasyczne skrypty współdzielące globalne 
 src/core   util, i18n (EN/PL), platform (SDK), audio (WebAudio)
 src/data   elements (znaki/żywioły), moves, species, items, world (wyspy, trenerzy, zadania), arena (ligi)
 src/art    paint (paleta i cieniowanie), scenery (malowane tła + podesty walki), props (rekwizyty), monster_art (proceduralne potwory), world_art (wypiekanie teł, postacie, wyspy, mapy wysp, ikony), fx (API efektów walki), vfx (silnik cząsteczek canvas)
-src/game   state (zapis v2 + migracja), quests, camp (jaja, Dojo), meta (medale, kalendarz), battle_logic
+src/game   state (zapis v2 + migracja), quests, camp (jaja, Dojo), meta (medale, kalendarz), weather (pogoda i spadające gwiazdy), battle_logic
 src/ui     ui (skalowanie, modale, dialogi, HUD, przejścia), menus, menus_meta (Obóz, medale, kalendarz, puchary)
 src/scenes title, prologue, intro (Gwiezdny Ołtarz), explore, battle, galaxy, arena
 tools      build.js, check.js (i18n+dane), smoke.js (testy logiki), artcheck.js (render całej grafiki), shot.js (zrzuty scen w Chrome headless), sim.js / sim_teams.js (balans), gallery.html, world.html
@@ -318,6 +320,7 @@ tools      build.js, check.js (i18n+dane), smoke.js (testy logiki), artcheck.js 
 - [ ] Sprawdzenie znaku towarowego nazwy przed premierą
 
 ## 11. Roadmapa
+- ✅ **3.5** (zrobione) — „Niebo nad wyspami”: pogoda na wyspach (deszcz, burza, upał, mgła) z wpływem na walkę i spawny, prognoza na Stacji pogody Jetta i Mapie Gwiazd, spadające gwiazdy z rzadkim Orblingiem w stygnącym kraterze.
 - ✅ **2.0** (zrobione) — efekty walki, AUTO/×2, Arena (5 lig), Obóz (jaja + Dojo), 63 medale, kalendarz logowania, Alfy, okruchy, pora dnia, VS, panel awansu, nowe zadania, muzyka Areny.
 - ✅ **2.1** (zrobione) — malowana oprawa: nowe tła 12 biomów i stadionu, rekwizyty, cieniowanie Orblingów, podesty walki, mapa galaktyki, postacie.
 - ✅ **3.1** (zrobione) — „Gwiezdny początek”: epickie otwarcie — prolog-film, Gwiezdny Ołtarz z dialogiem i wyborem startera w snopie światła, od razu pierwsza walka na nocnym tle, nowy ekran tytułowy (key art z legendami), zgodnie z zasadami Poki i CrazyGames (bez kliknięć przed grą, pomijalne, `gameplayStart` dopiero przy interakcji, lejek analityki).

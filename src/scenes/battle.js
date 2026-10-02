@@ -24,6 +24,7 @@ const BattleScene = {
     this.eTeam = p.enemies;
     this.zoneId = p.zone || 'clover';
     this.alpha = !!p.alpha;
+    this.star = !!p.star; // 3.5: born from a falling star (a better catch, great potential)
     this.enMap = {}; this.stMap = {}; this.leveled = new Set(); this.skipXp = null; this.xpLog = {}; this.endured = new Set();
     this.hintShown = {};
     this.autoHold = false;
@@ -32,19 +33,22 @@ const BattleScene = {
     // the Star Altar at night)
     const [bgB, bgS] = p.bg || (this.kind === 'arena' ? ['arena', 5] : [z.biome, z.seed]);
     const tod = p.bg || this.kind === 'arena' ? '' : zoneTod(z);
+    // the isle's weather comes into the fight (not at the Altar, in the Arena or before a legend)
+    BL.wx = p.bg || this.kind === 'arena' || this.kind === 'legend' ? '' : Weather.ofZone(this.zoneId);
     await WArt.bake(bgB, bgS, tod);
     const root = UI.scene;
     root.className = 'battle' + (this.kind === 'legend' ? ' legend' : '') + (this.kind === 'arena' ? ' arena' : '');
     const arena = this.arenaEl = U.el('div', { class: 'stage16 b-arena' });
     root.appendChild(arena);
-    arena.append(WArt.bgImg(bgB, bgS, 'b-bg', tod), U.el('div', { class: 'b-dim' }));
+    const wxl = Weather.layers(BL.wx, bgB, { y0: 330, y1: 700 });
+    arena.append(WArt.bgImg(bgB, bgS, 'b-bg', tod), wxl.sky, U.el('div', { class: 'b-dim' }));
     if (this.tamerId) {
       this.tamerEl = U.el('div', { class: 'b-tamer' }, U.img(WArt.person(tamerLook(this.tamerId))));
       arena.appendChild(this.tamerEl);
     } else this.tamerEl = null;
     this.monE = this.slot('e'); this.monP = this.slot('p');
     if (this.alpha) this.monE.wrap.classList.add('alpha');
-    arena.append(this.monE.wrap, this.monP.wrap);
+    arena.append(this.monE.wrap, this.monP.wrap, wxl.front);
     this.cardE = U.el('div', { class: 'b-card bp e' }); this.cardP = U.el('div', { class: 'b-card bp p' });
     root.append(this.cardE, this.cardP);
     // the control bar: big octagon portrait, team strip, battle log, 2×2 moves around the turn dial, item / run
@@ -90,6 +94,7 @@ const BattleScene = {
     setTimeout(() => this.intro().catch(e => console.error(e)), 300);
   },
   exit() {
+    BL.wx = '';
     clearInterval(this.blinkT);
     Capture.settle(this);
     Painter.hold('battle', false);
@@ -183,7 +188,7 @@ const BattleScene = {
   fxc(A, D, miss) { return { a: this.center(A), d: this.center(D), dir: A.side === 'p' ? 1 : -1, aSlot: A.slot, dSlot: D.slot, aGround: this.ground(A), dGround: this.ground(D), miss: !!miss }; },
   nameOf(f) {
     if (f.side !== 'e') return f.sp.name;
-    if (this.kind === 'wild') return t(f.alpha ? 'b.alphap' : 'b.wildp') + f.sp.name;
+    if (this.kind === 'wild') return t(f.alpha ? 'b.alphap' : f.star ? 'b.starp' : 'b.wildp') + f.sp.name;
     return t('b.foep') + f.sp.name;
   },
 
@@ -193,7 +198,7 @@ const BattleScene = {
     el.style.visibility = '';
     el.classList.toggle('alpha', !!f.alpha);
     const sp = f.sp;
-    const role = side === 'p' ? '' : f.alpha ? t('b.alpha') : this.kind === 'wild' ? t('b.wild_tag') : this.kind === 'legend' ? t('b.legend_tag') : t('b.foe_tag');
+    const role = side === 'p' ? '' : f.alpha ? t('b.alpha') : f.star ? t('sf.tag') : this.kind === 'wild' ? t('b.wild_tag') : this.kind === 'legend' ? t('b.legend_tag') : t('b.foe_tag');
     el.append(U.el('div', { class: 'bp-top' },
       U.el('span', { class: 'bp-sign', html: signIcon(sp.sign, 40) }),
       U.el('b', { class: 'bp-name' + (f.alpha ? ' gold' : sp.legend ? ' legend' : ''), text: sp.name }),
@@ -349,6 +354,7 @@ const BattleScene = {
         U.el('span', { class: 'mvb-ic', html: m.el ? elIcon(m.el, 30) : WArt.icon(m.pow ? 'swords' : m.cat === 'heal' ? 'heal' : 'star', 24) }),
         U.el('b', { class: 'mvb-n', text: t('mv.' + id) }),
         eff >= 1.25 ? U.el('em', { class: 'mvb-eff good', text: t('b.eff_good') }) : eff <= 0.8 ? U.el('em', { class: 'mvb-eff bad', text: t('b.eff_bad') }) : null,
+        m.pow && Weather.boost(BL.wx, m.el) > 1 ? U.el('i', { class: 'mvb-wx', title: Weather.effect(BL.wx), html: Weather.icon(BL.wx, 20) }) : null,
         U.el('small', { class: 'mvb-c', html: cost > 0 ? `⚡${cost}` : `<i>${t('b.free')}</i>` }));
       this.movesEl.appendChild(btn);
     }
@@ -411,6 +417,7 @@ const BattleScene = {
     const hpMult = this.kind === 'legend' ? 1.5 : this.alpha ? 1.3 : 1;
     this.e = BL.fighter(this.eTeam[first], 'e', hpMult > 1 ? { hpMult } : {});
     this.e.alpha = this.alpha;
+    this.e.star = this.star;
     if (this.kind === 'wild') this.dial.classList.add('r-' + this.e.sp.rarity); // the ring shows how rare this one is
     this.setSprite(this.monE, this.e);
     Game.see(this.e.mon.sp);
@@ -419,6 +426,7 @@ const BattleScene = {
       this.renderCard('e');
       if (this.kind === 'legend') { FX.flash('#fff6c8', 0.5, 600); await this.say(t('b.legend', { name: this.e.sp.name }), 1400); }
       else if (this.alpha) { FX.shake(8); FX.glow(...this.center(this.e), 'rgba(255,210,63,.8)', 340, 900); await this.say(t('b.alpha_wild', { name: this.e.sp.name }), 1400); }
+      else if (this.star) { FX.flash('#fff6c8', 0.4, 500); await this.say(t('b.star', { name: this.e.sp.name }) + (this.e.mon.shiny ? ' <b class="shinytxt">✦ ' + t('b.shiny') + '</b>' : ''), 1400); }
       else await this.say(t(this.p0.first ? 'b.first' : 'b.wild', { name: this.e.sp.name }) + (this.e.mon.shiny ? ' <b class="shinytxt">✦ ' + t('b.shiny') + '</b>' : ''), 1200);
     } else {
       await this.vsSplash();
@@ -437,8 +445,11 @@ const BattleScene = {
     await this.say(t('b.go', { name: this.p.sp.name }), 450);
     await this.orbIn(this.monP);
     this.renderCard('p');
+    // the weather, once per isle and change of weather: what it does to this fight
+    const wxKey = BL.wx && this.zoneId + ':' + Weather.slot();
+    if (wxKey && Weather.told !== wxKey) { Weather.told = wxKey; await this.say(Weather.icon(BL.wx, 24) + ' ' + t('wxb.' + BL.wx, { n: Math.round((WX_BOOST - 1) * 100) }), 1300); }
     // auto pauses for Orblings worth catching
-    if (this.autoOn() && this.kind === 'wild' && (!Game.caught(this.e.mon.sp) || this.e.mon.shiny || this.alpha)) {
+    if (this.autoOn() && this.kind === 'wild' && (!Game.caught(this.e.mon.sp) || this.e.mon.shiny || this.alpha || this.star)) {
       this.autoHold = true;
       this.updCtrl();
       UI.toast(WArt.icon('auto', 22) + ' ' + t('b.auto_hold'), 'good');
@@ -447,7 +458,7 @@ const BattleScene = {
   },
   /** wild entrance: an element-tinted sparkle vortex on the base, then the Orbling leaps out and lands */
   async wildIn() {
-    const gx = EX, gy = EY, big = this.kind === 'legend' || this.alpha;
+    const gx = EX, gy = EY, big = this.kind === 'legend' || this.alpha || this.star;
     if (this.kind === 'legend') { FX.flash('#140c30', 0.55, 1100); VFX.aura(gx, gy - 150, '#fff6a0', 1800); await U.sleep(300); }
     if (VFX.ok()) await VFX.wildIn(gx, gy, this.e.sp.el, big);
     this.monE.spr.style.opacity = 1;
@@ -989,6 +1000,7 @@ const BattleScene = {
     if (fc) UI.toast(WArt.icon('calendar', 22) + ' ' + t('day.fc_got', { n: fc.orb, c: fc.coins }), 'good');
     if (m.shiny) st.shinies++;
     if (this.alpha) st.alphas++;
+    if (this.star) st.starborn++;
     Game.s.flags.tutCatch = 1;
     this.caughtTxp = 15 + m.lv;
     Game.save();

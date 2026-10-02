@@ -556,11 +556,12 @@ const UI = {
     };
   },
   /** Area intro: the zone's name sweeps in on a dark band, then fades */
-  zoneBanner(z, night) {
+  zoneBanner(z, night, wx) {
     const b = U.el('div', { class: 'zbanner' }, U.el('b', { text: t('zone.' + z.id) }),
       U.el('small', { html: z.home ? (z.id === 'yard' ? t('yard.sub', { n: WORKSHOPS.filter(W => Base.worker(W.id)).length }) : t('home.sub', { n: Game.allMons().length, k: Base.glade().length })) : t('isle.' + z.isle) + ' &middot; ' + t('ui.lv') + ' ' + z.lv[0] + '–' + z.lv[1] + (night ? ' &middot; ' + WArt.icon('moon', 16) + ' ' + t('ex.night') : '') }));
     const rare = !z.home && zoneRare(z.id);
     if (rare) b.appendChild(U.el('small', { class: 'zb-rare', html: `<i class="rdot r-${SPECIES[rare].rarity}"></i>` + t('ex.rare_target', { name: Game.seen(rare) ? SPECIES[rare].name : '???' }) + (Game.caught(rare) ? ' ✓' : '') }));
+    if (wx) b.appendChild(U.el('small', { class: 'zb-wx', html: Weather.icon(wx, 20) + '<b>' + Weather.name(wx, z.isle) + '</b> · ' + Weather.effect(wx) }));
     this.hud.appendChild(b);
     // toasts step below the band while it is there (they share the top of the screen)
     this.root.classList.add('zb-on');

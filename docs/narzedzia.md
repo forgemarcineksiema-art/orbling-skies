@@ -37,7 +37,8 @@ node tools/smoke.js
 
 Test logiki bez przeglądarki: cały łańcuch zadań, migracje zapisu (v1 → v5), zapis/odczyt, zadania dzienne, jaja i Dojo,
 medale, kalendarz logowania, odblokowanie lig Areny, ewolucje, zasady drużyny, szanse łapania, a z 3.0: warsztaty
-(limit 10 h, zbiór, pracownik w drużynie), przyjaźń (limity), dekoracje, gość, pierwsze złapanie, prezent powitalny i historie.
+(limit 10 h, zbiór, pracownik w drużynie), przyjaźń (limity), dekoracje, gość, pierwsze złapanie, prezent powitalny i historie, a z 3.5: pogoda
+(prognoza, mnożnik obrażeń), Gwiezdne Orblingi i odstępy między spadającymi gwiazdami.
 
 ```bash
 node tools/sim.js
@@ -54,6 +55,9 @@ Symulacje pojedynków AI vs AI (balans, liczba tur); `node tools/sim_teams.js` �
 - `tools/audit.js` — audyt układu w działającej grze: `eval(await (await fetch('/tools/audit.js')).text()); await Audit.setup(); await Audit.tour()`
   (drugą trasę rzadszych ekranów daje `Audit.tour2()`); `?pill=1` pokazuje strefę przycisku Poki.
 
+
+Pogoda i spadające gwiazdy w działającej grze: `?wx=rain` (`storm`, `heat`, `fog`, `clear`) wymusza pogodę na każdej wyspie,
+`?star=1` zrzuca gwiazdę kilka sekund po wejściu do strefy (np. `http://localhost:8080/?wx=storm&star=1`).
 
 ## Zmiana nazwy gry
 

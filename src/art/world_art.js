@@ -938,6 +938,12 @@ const WArt = (() => {
     tent: '<path d="M12 3.5L2.5 20h19z"/><path d="M12 9.5l-3.6 10.5h7.2z" fill="#2b2040"/><path d="M12 3.5V1.8M12 1.8l3 1.2-3 1.1" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linejoin="round"/>',
     moon: '<path d="M15.5 3.2A8.8 8.8 0 1 0 20.8 15 7 7 0 0 1 15.5 3.2z"/>',
     sun: '<circle cx="12" cy="12" r="5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>',
+    // 3.5 weather
+    cloud: '<path d="M6.5 18.5a4.5 4.5 0 0 1-.6-9 6 6 0 0 1 11.4-1.2A4.8 4.8 0 0 1 17.5 18.5z"/>',
+    rain: '<path d="M6.5 14a4 4 0 0 1-.5-8 5.5 5.5 0 0 1 10.6-1A4.3 4.3 0 0 1 17.3 14z"/><path d="M8.2 16.8l-1.2 3.4M12.4 16.8l-1.2 4.4M16.6 16.8l-1.2 3.4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>',
+    storm: '<path d="M6.5 13a4 4 0 0 1-.5-8 5.5 5.5 0 0 1 10.6-1A4.3 4.3 0 0 1 17.3 13z"/><path d="M13.2 11.5L9 17.6h3l-1.6 5 5.4-7h-3.1l1.9-4.1z" stroke="#2b2040" stroke-width="1.1" stroke-linejoin="round"/>',
+    heat: '<circle cx="12" cy="8.6" r="4.1"/><path d="M12 1.4v1.8M5.4 4l1.3 1.3M18.6 4l-1.3 1.3M2.8 9.4h1.9M19.3 9.4h1.9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M3.3 16.2q2.2-1.7 4.4 0t4.3 0 4.3 0 4.4 0M3.3 20.6q2.2-1.7 4.4 0t4.3 0 4.3 0 4.4 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>',
+    fog: '<path d="M7 11a3.6 3.6 0 0 1-.4-7.2 5 5 0 0 1 9.6-.9A3.9 3.9 0 0 1 16.4 11z"/><path d="M3 14.6h18M5.5 18.1h14M3 21.6h13" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>',
     crown: '<path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5z"/><circle cx="3" cy="7.5" r="1.8"/><circle cx="12" cy="4.5" r="1.8"/><circle cx="21" cy="7.5" r="1.8"/>',
     auto: '<path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3" stroke="currentColor" stroke-width="2.8" fill="none" stroke-linecap="round"/><path d="M20.5 3.5v5.2h-5.2z"/><path d="M10 8.5v7l5.5-3.5z"/>',
     fast: '<path d="M3 5.5v13l8.5-6.5zM12 5.5v13l8.5-6.5z"/>',
