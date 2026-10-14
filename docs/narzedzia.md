@@ -66,3 +66,6 @@ pewne trafienie przeciw Rybom, energia Wodnika i powtarzalność symulacji. Kont
 
 Tytuł występuje w `index.html` (`<title>`, ekran ładowania), `src/scenes/title.js` (logo SVG),
 `src/main.js` (klucze zapisu) i `tools/build.js` (nazwy zipów).
+
+`node tools/perfcheck.js` — regresje bufora teł, ponownego użycia grafiki, wstrzymywania malowania,
+limitów efektów oraz sprzątania opóźnionych emisji. [Pomiary przeglądarkowe](PERFORMANCE.md).

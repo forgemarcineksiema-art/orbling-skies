@@ -10,7 +10,12 @@ const VFX = (() => {
   // the canvas covers the effects layer: the 1280×720 stage, or the whole tall screen of a portrait menu scene
   let W = 1280, H = 720;
   let cv = null, g = null, res = 1, raf = 0, last = 0, running = false;
-  const P = [], O = [];
+  const P = [], O = [], timers = new Set();
+  function schedule(fn, ms) {
+    const id = setTimeout(() => { timers.delete(id); if (!document.hidden) fn(); }, ms);
+    timers.add(id); return id;
+  }
+  const particleLimit = () => lite ? 450 : 1200;
   const sprites = new Map();
   const rnd = (a, b) => a + Math.random() * (b - a);
   const pick = a => a[(Math.random() * a.length) | 0];
@@ -39,7 +44,7 @@ const VFX = (() => {
   }
   function ensure() {
     if (!ok() || typeof UI === 'undefined' || !UI.fx) return false;
-    const want = U.clamp(((UI.scale) || 1) * (window.devicePixelRatio || 1), 1, 2);
+    const want = U.clamp(((UI.scale) || 1) * (window.devicePixelRatio || 1), 0.5, lite ? 1 : 2);
     if (!cv) { cv = document.createElement('canvas'); cv.className = 'vfx'; g = cv.getContext('2d'); }
     if (!cv.isConnected) { P.length = 0; O.length = 0; UI.fx.prepend(cv); }
     const tall = UI.portrait && !UI.fx.classList.contains('stage16');
@@ -69,18 +74,18 @@ const VFX = (() => {
     raf = requestAnimationFrame(frame);
   }
   /** add one particle; times are nominal ms (scaled by the battle speed) */
-  function part(o) {
-    if (!ensure()) return null;
+  function part(o, prepared = false) {
+    if (document.hidden || P.length >= particleLimit() || (!prepared && !ensure())) return null;
     const p = Object.assign({ vx: 0, vy: 0, ax: 0, ay: 0, drag: 0, life: 600, s0: 10, s1: 0, cols: ['#ffffff'], shape: 'glow', rot: 0, vr: 0, add: true, a: 1, fin: 0.08, fout: 0.55, streak: 0, w: 2, q: null }, o);
     p.b = now() + (o.delay || 0) * K();
     P.push(p);
-    if (P.length > 2600) P.splice(0, 600);
     start();
     return p;
   }
   /** emit n particles with randomized ranges ([min,max]) */
   function emit(n, o) {
-    n = Math.round(n * (lite ? 0.5 : 1));
+    if (document.hidden || !ensure()) return;
+    n = Math.min(Math.round(n * (lite ? 0.5 : 1)), Math.max(0, particleLimit() - P.length));
     for (let i = 0; i < n; i++) {
       const ang = R2(o.ang != null ? o.ang : [0, TAU]), spd = R2(o.spd != null ? o.spd : [60, 200]);
       const s0 = R2(o.size || [6, 12]);
@@ -95,12 +100,12 @@ const VFX = (() => {
         ease: o.ease, wob: o.wob || 0, wobA: o.wobA || 0, ph: rnd(0, TAU), stroke: o.stroke,
       };
       if (p.shape === 'rock') { p.poly = []; for (let k = 0; k < 7; k++) { const a = k / 7 * TAU; p.poly.push([Math.cos(a) * (0.7 + Math.random() * 0.35), Math.sin(a) * (0.6 + Math.random() * 0.35)]); } }
-      part(p);
+      part(p, true);
     }
   }
   /** custom drawable (beams, bolts, projectiles, waves...) */
   function obj(o) {
-    if (!ensure()) return null;
+    if (document.hidden || O.length >= 160 || !ensure()) return null;
     o.b = now() + (o.delay || 0) * K(); o.q = null;
     O.push(o); start();
     return o;
@@ -670,7 +675,7 @@ const VFX = (() => {
       const [x, y] = tgt(c);
       FX.flash('#1c1640', 0.28, 200);
       bolt(x + rnd(-60, 60), -30, x, y, { col: '#fff066', glow: '#8a7cff' });
-      setTimeout(() => bolt(x + rnd(-80, 80), -30, x + rnd(-20, 20), y, { col: '#ffffff', glow: '#a898ff', branches: 1, w: 14, life: 260 }), 90 * K());
+      schedule(() => bolt(x + rnd(-80, 80), -30, x + rnd(-20, 20), y, { col: '#ffffff', glow: '#a898ff', branches: 1, w: 14, life: 260 }), 90 * K());
       FX.flash('#fffbe0', 0.45, 220);
       await wait(110);
     },
@@ -679,7 +684,7 @@ const VFX = (() => {
       const [x, y] = tgt(c);
       FX.flash('#1c1640', 0.45, 800);
       emit(14, { x, y: y - 230, rx: 150, ry: 26, shape: 'smoke', add: false, cols: ['#3a3460'], spd: [5, 30], life: [900, 1200], size: [40, 60], grow: 1.4, a: [0.5, 0.7], grav: 0 });
-      for (let i = 0; i < 3; i++) setTimeout(() => bolt(x + (i - 1) * 60 + rnd(-20, 20), y - 220, x + rnd(-30, 30), y, { col: '#fff066' }), (120 + i * 130) * K());
+      for (let i = 0; i < 3; i++) schedule(() => bolt(x + (i - 1) * 60 + rnd(-20, 20), y - 220, x + rnd(-30, 30), y, { col: '#fff066' }), (120 + i * 130) * K());
       let acc = 0;
       obj({ life: 800, step(dt) { acc += dt * 70; while (acc >= 1) { acc--; part({ x: x + rnd(-170, 170), y: y - rnd(180, 220), vx: -60, vy: rnd(700, 850), shape: 'spark', cols: ['#c8d8ff'], s0: 3, s1: 2, w: 1.6, streak: 0.04, life: 300 }); } }, draw() {} });
       await wait(420);
@@ -725,7 +730,7 @@ const VFX = (() => {
       Snd.play('phys'); speedLines(c); lunge(c, c.dir * 130, c.dir * -36, 360);
       await wait(160);
       const [x, y] = tgt(c);
-      for (let i = 0; i < 2; i++) setTimeout(() => pow(x + rnd(-40, 40), y + rnd(-40, 40), 40), 90 * (i + 1) * K());
+      for (let i = 0; i < 2; i++) schedule(() => pow(x + rnd(-40, 40), y + rnd(-40, 40), 40), 90 * (i + 1) * K());
     },
     async sting(c) { Snd.play('phys'); speedLines(c, ['#f0d0ff', '#c07cff']); lunge(c, c.dir * 150, c.dir * -40, 420); await wait(190); HIT.poison(...tgt(c), 0.8); },
     async arrow(c) {
@@ -806,7 +811,7 @@ const VFX = (() => {
     if (st === 'charge') {
       Snd.play('buff');
       converge(x, y, 36, PAL.bolt, { r: [90, 170] });
-      for (let i = 0; i < 4; i++) setTimeout(() => { const a = rnd(0, TAU); bolt(x + Math.cos(a) * 70, y + Math.sin(a) * 70, x, y, { seg: 4, jit: 12, branches: 0, w: 10, life: 200 }); }, i * 90 * K());
+      for (let i = 0; i < 4; i++) schedule(() => { const a = rnd(0, TAU); bolt(x + Math.cos(a) * 70, y + Math.sin(a) * 70, x, y, { seg: 4, jit: 12, branches: 0, w: 10, life: 200 }); }, i * 90 * K());
       await wait(460);
       flash(x, y, '#fff066', 130, 360);
       return;
@@ -844,7 +849,7 @@ const VFX = (() => {
     const cols = PAL[EL[el]] || PAL.leaf;
     emit(64, { x, y: gy - 80, shape: el === 'earth' ? 'leaf' : 'star', cols: el === 'earth' ? ['#9ad65a', '#6cc04a', '#b8ec70'] : cols, add: el !== 'earth', orb: { cx: x, cy: gy - 80, r0: [80, 150], dr: -170, w: 9, flat: 0.5 }, life: [420, 620], size: [6, 11], grow: 0.4, stagger: 5 });
     emit(30, { x, y: gy - 80, shape: 'glow', cols: [cols[1], '#ffffff'], orb: { cx: x, cy: gy - 80, r0: [60, 130], dr: -150, w: -8, flat: 0.5 }, life: [400, 600], size: [5, 10], grow: 0.4, stagger: 7 });
-    setTimeout(() => {
+    schedule(() => {
       flash(x, gy - 70, alpha ? '#ffd23f' : cols[1], alpha ? 220 : 150, 400);
       stars(x, gy - 70, alpha ? 30 : 18, alpha ? PAL.star : cols, { spd: [160, 420] });
       ring(x, gy - 4, alpha ? '#ffd23f' : '#ffffff', 20, alpha ? 240 : 180, 560, 8, { flat: 0.32 });
@@ -916,7 +921,7 @@ const VFX = (() => {
     } });
     // stars spiralling up round the Orbling while the ring climbs, then streaming into the orb
     emit(26, { x: o.fx, y: o.fy, shape: 'star', cols, size: [4, 8], grow: 0.4, life: [d2 * 0.8, d2 * 1.2], orb: { cx: o.fx, cy: o.fy - 6, r0: [o.rx * 0.7, o.rx * 1.05], dr: -o.rx * 0.6, w: 7, flat, vy: -(o.fy - o.top) * 1000 / (d2 + d3) * 0.8 }, delay: d1, stagger: d2 / 30 });
-    setTimeout(() => converge(o.ox, o.oy, 28, [cols[0], cols[1], '#ffffff'], { r: [60, 130], life: [d3 * 0.8, d3 * 1.1] }), (d1 + d2) * K());
+    schedule(() => converge(o.ox, o.oy, 28, [cols[0], cols[1], '#ffffff'], { r: [60, 130], life: [d3 * 0.8, d3 * 1.1] }), (d1 + d2) * K());
     return wait(d1 + d2 + d3);
   }
   /** a constellation draws itself: its stars pop in one by one (every o.step ms after o.t0) and the lines follow; it
@@ -953,7 +958,7 @@ const VFX = (() => {
         c.globalAlpha = 1; star4(px, py, s * 1.35, 0, '#ffffff');
       }
     } });
-    for (let i = 0; i < n; i++) setTimeout(() => { if (o.cancelled) return; stars(pts[i][0], pts[i][1], big.has(i) ? 6 : 3, ['#ffffff', col], { spd: [50, 150], size: [3, 6] }); if (o.onStar) o.onStar(i); }, ts[i] * K());
+    for (let i = 0; i < n; i++) schedule(() => { if (o.cancelled) return; stars(pts[i][0], pts[i][1], big.has(i) ? 6 : 3, ['#ffffff', col], { spd: [50, 150], size: [3, 6] }); if (o.onStar) o.onStar(i); }, ts[i] * K());
     return life;
   }
   /** jagged cracks of light running out of an orb about to burst */
@@ -1018,8 +1023,13 @@ const VFX = (() => {
     ok, ensure, emit, part, obj, flash, ring, smoke, sparks, stars, dots, shot, bolt, beam, crescent, wavesTo, converge, pow,
     hit, status, stage, heal, cast, moves: FAM, summon, wildIn, suck, wobble, caught, confetti, dissolve, aura, PAL, EL, arcPath,
     sprite, aimBurst, halo, constellation, cracks, sealed, breakout,
-    clear() { P.length = 0; O.length = 0; },
+    clear() {
+      P.length = 0; O.length = 0;
+      for (const id of timers) clearTimeout(id);
+      timers.clear(); cancelAnimationFrame(raf); raf = 0; running = false;
+      if (g) { g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, cv.width, cv.height); }
+    },
     setLite(v) { lite = !!v; },
-    stats() { return { p: P.length, o: O.length, running, res, conn: !!(cv && cv.isConnected), w: cv && cv.width }; },
+    stats() { return { p: P.length, o: O.length, timers: timers.size, limit: particleLimit(), running, res, conn: !!(cv && cv.isConnected), w: cv && cv.width }; },
   };
 })();

@@ -55,6 +55,7 @@ STRICT=1 node tools/check.js
 node tools/artcheck.js
 node tools/smoke.js
 node tools/regression.js
+node tools/perfcheck.js
 ```
 
 GitHub Actions runs these checks and builds all three distributions on pushes and pull requests.

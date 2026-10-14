@@ -73,6 +73,7 @@ const BattleScene = {
     clearInterval(this.blinkT);
     // the fighters' idle loops (flames flicker, tails sway, wings flutter …) at ~5 fps, with a blink as a loop starts over
     this.blinkT = setInterval(() => {
+      if (document.hidden || Platform.adActive) return;
       for (const sl of [this.monE, this.monP]) {
         if (!sl || !sl.paint) continue;
         const L = sl.paint.loop;

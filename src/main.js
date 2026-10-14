@@ -1,7 +1,7 @@
 'use strict';
 /* Boot: SDK init, settings, art warm-up with progress bar, global input & lifecycle handlers. */
 
-const VERSION = '3.4.3';
+const VERSION = '3.4.4';
 const SETTINGS_KEY = 'orbling_galaxy_settings_v1';
 
 const Main = {
@@ -53,7 +53,9 @@ const Main = {
     }
     Platform.onAd(() => { Snd.pauseAll('ad'); Painter.hold('ad', true); UI.holdCheers(1e9); }, () => { Snd.resumeAll('ad'); Painter.hold('ad', false); }); // (cheers wait for the ad to end)
     document.addEventListener('visibilitychange', () => {
-      if (document.hidden) { Snd.pauseAll('hidden'); if (Game.s) Game.save(); }
+      Painter.hold('hidden', document.hidden);
+      UI.root.classList.toggle('backgrounded', document.hidden);
+      if (document.hidden) { Snd.pauseAll('hidden'); VFX.clear(); if (Game.s) Game.save(); }
       else Snd.resumeAll('hidden');
     });
     window.addEventListener('keydown', e => {
@@ -76,8 +78,7 @@ const Main = {
     if (returning) { Game.s.flags.returning = 1; await UI.go(ExploreScene, { zone: Game.s.loc.zone }); }
     else await UI.go(hadSave ? TitleScene : this.settings.seenIntro ? IntroScene : PrologueScene, {});
     setTimeout(() => this.probePerf(), 3000);
-    // paint the whole bestiary quietly in the background (cached in IndexedDB for next time)
-    setTimeout(() => { try { MonArt.prefetchAll(); } catch (e) { console.warn(e); } }, returning ? 2500 : 25000);
+    // Paint species on demand. Preparing the entire bestiary competes with play on phones.
   },
 
   /** lite mode for slow devices: every other animation frame, half the particles, no heavy filters (.lite) */

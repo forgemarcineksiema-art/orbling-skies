@@ -1488,7 +1488,7 @@ const MonArt = (() => {
     for (let i = 1; i < n; i++) list.push(paintSpec(id, { t: i / n }));
     list.push(paintSpec(id, { blink: true }));
     if (low) Painter.prefetch(list.map(q => [q.key, q.svg, q.o]));
-    else for (const q of list) Painter.bake(q.key, q.svg(), q.o);
+    else for (const q of list) Painter.bake(q.key, q.svg, q.o);
   }
   /** paint every species in the background (idle pictures for menus / the Codex) */
   function prefetchAll() { Painter.prefetch(SPECIES_ORDER.map(id => { const q = paintSpec(id, {}); return [q.key, q.svg, q.o]; })); }
@@ -1505,7 +1505,7 @@ const MonArt = (() => {
   /** painted bitmap → Promise<url>; opts: shiny, blink, pose (walk phase), size ('lg' for battle), urgent */
   function painted(id, opts = {}) {
     const q = paintSpec(id, opts);
-    return Painter.bake(q.key, q.svg(), q.o);
+    return Painter.bake(q.key, q.svg, q.o);
   }
 
   return { svg: render, url, floats, gait, painted, prefetchAll, prefetchSet, FRAMES, frames, setLite, isLite, walkStep, isHopper };

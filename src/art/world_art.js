@@ -66,14 +66,32 @@ const WArt = (() => {
    * bitmap sized for the current display; every scene (explore, battles, re-visits) then gets a cheap
    * canvas copy and the vector painting is never re-rasterized. */
   const baked = new Map(), baking = new Map();
+  const BACKDROP_LIMIT = 24 * 1024 * 1024;
+  let backdropBytes = 0;
+  function cached(key) {
+    const c = baked.get(key);
+    if (baked.has(key)) { baked.delete(key); baked.set(key, c); }
+    return c;
+  }
+  function remember(key, canvas) {
+    baked.set(key, canvas);
+    backdropBytes += canvas ? canvas.width * canvas.height * 4 : 0;
+    // Scene canvases are independent copies; never resize a master a pending caller may still use.
+    while (baked.size > 3 || (backdropBytes > BACKDROP_LIMIT && baked.size > 1)) {
+      const oldest = baked.keys().next().value, c = baked.get(oldest);
+      backdropBytes -= c ? c.width * c.height * 4 : 0;
+      baked.delete(oldest);
+    }
+  }
+  const stats = () => ({ backdrops: baked.size, bytes: backdropBytes, limit: BACKDROP_LIMIT, pending: baking.size });
   const bakeK = () => Math.round(U.clamp(((typeof UI !== 'undefined' && UI.scale) || 1) * ((typeof window !== 'undefined' && window.devicePixelRatio) || 1), 1, 2) * 4) / 4;
   function bake(biome, seed, tod) {
     tod = todOf(tod);
     const k = bakeK(), key = biome + ':' + seed + ':' + k + ':' + tod;
-    if (baked.has(key)) return Promise.resolve(baked.get(key));
+    if (baked.has(key)) return Promise.resolve(cached(key));
     if (baking.has(key)) return baking.get(key);
     const p = new Promise(res => {
-      const done = m => { baked.set(key, m); baking.delete(key); res(m); };
+      const done = m => { remember(key, m); baking.delete(key); res(m); };
       if (typeof Image === 'undefined' || typeof document === 'undefined') return done(null);
       const im = new Image();
       im.onload = () => {
@@ -87,7 +105,7 @@ const WArt = (() => {
       im.onerror = () => done(null);
       im.src = bg(biome, seed, tod);
     });
-    baking.set(key, p);
+    if (!baked.has(key)) baking.set(key, p);
     return p;
   }
   /** painted oval battle base for a biome */
@@ -101,13 +119,15 @@ const WArt = (() => {
     const cv = document.createElement('canvas');
     if (!cv.getContext) return U.img(bg(biome, seed, tod), cls);
     cv.className = cls || '';
-    cv.width = Math.round(1280 * k); cv.height = Math.round(720 * k);
+    // The heavily blurred portrait filler does not need a full-resolution backing store.
+    const copyK = /(?:^|\s)(?:ex-back|b-back)(?:\s|$)/.test(cls || '') ? Math.min(k, 0.5) : k;
+    cv.width = Math.round(1280 * copyK); cv.height = Math.round(720 * copyK);
     const paint = m => {
       if (m) { try { cv.getContext('2d').drawImage(m, 0, 0, cv.width, cv.height); return; } catch (e) { /* fall through */ } }
       const im = U.img(bg(biome, seed, tod), cls);
       if (cv.parentNode) cv.parentNode.replaceChild(im, cv);
     };
-    if (baked.has(key)) paint(baked.get(key));
+    if (baked.has(key)) paint(cached(key));
     else bake(biome, seed, tod).then(paint);
     return cv;
   }
@@ -152,7 +172,7 @@ const WArt = (() => {
   /** painted bitmap → Promise<url>; o: frame (0..7 walk), blink, size, urgent */
   function painted(L, o = {}) {
     const q = personSpec(L, o);
-    return Painter.bake(q.key, q.svg(), q.o);
+    return Painter.bake(q.key, q.svg, q.o);
   }
   /* body builds: head scale/offset, shoulder & hip heights, torso half-widths (shoulder, hip), leg width & spacing */
   const BUILD = {
@@ -994,5 +1014,5 @@ const WArt = (() => {
     return `<svg class="ico ${cls}" viewBox="0 0 24 24" width="${size}" height="${size}" fill="currentColor">${ICONS[name] || ''}</svg>`;
   }
 
-  return { bg, bgImg, bake, plat, zodiacWheel, signGlyph, starTile, isleMap, MAP_NODES, portrait, painted, personSvg, prop, person, pip, item, orbPart, space, isle, icon, spotMark, SKINS, HAIRC, SUITS, HAIRS, PROP };
+  return { bg, bgImg, bake, stats, plat, zodiacWheel, signGlyph, starTile, isleMap, MAP_NODES, portrait, painted, personSvg, prop, person, pip, item, orbPart, space, isle, icon, spotMark, SKINS, HAIRC, SUITS, HAIRS, PROP };
 })();

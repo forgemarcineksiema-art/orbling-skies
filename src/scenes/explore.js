@@ -96,7 +96,7 @@ const ExploreScene = {
     this.pipEl = U.el('div', { class: 'pipfly' }, U.img(WArt.pip(), 'pip-img'));
     this.world.appendChild(this.pipEl);
     this.pip = { x: px - 70, y: py - 120, vx: 0 };
-    this.cam = null; this.camFocus = null;
+    this.cam = null; this.camFocus = null; this._camTransform = null;
     this.layout();
 
     // wild orblings
@@ -148,8 +148,7 @@ const ExploreScene = {
     }, 60);
     for (const e of this.ents) this.place(e, true);
     if (this.pending) { await Promise.race([Promise.all(this.pending), U.sleep(2200)]); this.pending = null; }
-    // the Orblings that can still appear on this isle get their frames painted in idle time
-    if (!home) for (const zid2 of ISLE[z.isle].zones) for (const [sp] of ZONES[zid2].spawns) MonArt.prefetchSet(sp, true);
+    // loadSprites prepares visible inhabitants; unseen zones no longer queue full animation sets.
     setTimeout(() => this.afterEnter(p, firstVisit), 380);
   },
 
@@ -157,7 +156,7 @@ const ExploreScene = {
   layout() {
     if (!this.stageEl) return;
     this.closeHomeCard();
-    if (!UI.portrait) { this.cam = null; this.stageEl.style.transform = ''; UI.stageXform(''); return; }
+    if (!UI.portrait) { this.cam = null; this._camTransform = null; this.stageEl.style.transform = ''; UI.stageXform(''); return; }
     const topHud = 186, botHud = 118;
     const s = U.clamp((UI.H - topHud - botHud) / 720, 0.86, 1.18);
     const top = Math.round(U.clamp((UI.H - 720 * s) / 2 + 24, topHud - 120, UI.H - botHud - 720 * s));
@@ -174,8 +173,7 @@ const ExploreScene = {
     want = U.clamp(want, 0, 1280 - c.vw);
     c.x = snap || c.x == null ? want : c.x + (want - c.x) * Math.min(1, dt * 4.5);
     const t = `translate(${(-c.x * c.s).toFixed(1)}px, ${c.top}px) scale(${c.s})`;
-    this.stageEl.style.transform = t;
-    UI.stageXform(t);
+    if (this._camTransform !== t) { this._camTransform = t; this.stageEl.style.transform = t; UI.stageXform(t); }
   },
   /** stage (root) coordinates ↔ world coordinates */
   toWorld(gx, gy) { const c = this.cam; return c ? [gx / c.s + c.x, (gy - c.top) / c.s] : [gx, gy]; },
@@ -191,6 +189,11 @@ const ExploreScene = {
     window.removeEventListener('keyup', this._ku);
     if (this.player && !this.home) { Game.s.loc.x = Math.round(this.player.x); Game.s.loc.y = Math.round(this.player.y); }
     this.closeHomeCard();
+    // Drop decoded frame images and detached world nodes when leaving this singleton scene.
+    for (const e of this.ents) if (e.spr) e.spr.keep.length = 0;
+    this.ents = []; this.wilds = []; this.byId = {}; this.shards = []; this.pending = null;
+    this.player = this.world = this.stageEl = this.amb = this.marker = this.pipEl = this.pipBub = null;
+    this.chase = this.camFocus = this.onArrive = null;
     UI.hudShow(false);
   },
 
@@ -277,8 +280,8 @@ const ExploreScene = {
    */
   loadSprites(e, kind, look, walks) {
     e.spr = { idle: e.src, blink: null, move: null, loop: null, keep: [] };
-    const alive = () => this.ents.includes(e);
-    const dec = u => { const im = new Image(); im.src = u; e.spr.keep.push(im); return (im.decode ? im.decode().catch(() => {}) : Promise.resolve()).then(() => u); };
+    const alive = () => this.running && this.ents.includes(e);
+    const dec = u => { if (!alive()) return Promise.resolve(u); const im = new Image(); im.src = u; e.spr.keep.push(im); return (im.decode ? im.decode().catch(() => {}) : Promise.resolve()).then(() => u); };
     const all = ps => Promise.all(ps).then(us => Promise.all(us.map(dec)));
     if (kind === 'person') {
       const idleP = WArt.painted(look, { urgent: true }).then(dec).then(u => { e.spr.idle = u; e._src = null; });
@@ -685,7 +688,7 @@ const ExploreScene = {
 
   /* ---------------- loop ---------------- */
   update(dt) {
-    if (Platform.adActive) return;
+    if (Platform.adActive || document.hidden) return;
     this.time += dt;
     const P = this.player;
     const kx = (this.keys.right ? 1 : 0) - (this.keys.left ? 1 : 0), ky = (this.keys.down ? 1 : 0) - (this.keys.up ? 1 : 0);
@@ -761,7 +764,13 @@ const ExploreScene = {
     const nx = this.pip.x + (pt[0] - this.pip.x) * k;
     this.pip.vx = (nx - this.pip.x) / Math.max(dt, 0.001);
     this.pip.x = nx; this.pip.y += (pt[1] - this.pip.y) * k;
-    for (const e of this.ents) if (e.dyn) { this.spriteFrame(e, dt); this.place(e, false, dt); }
+    for (const e of this.ents) if (e.dyn) {
+      // Keep world simulation alive offscreen, but avoid decoding/swapping invisible frames.
+      const c = this.cam, margin = e.w * (e.scale || 1);
+      const visible = !c || (e.x + margin >= c.x && e.x - margin <= c.x + c.vw);
+      if (e._offscreen !== !visible) { e.el.style.visibility = visible ? '' : 'hidden'; e._offscreen = !visible; }
+      if (visible) { this.spriteFrame(e, dt); this.place(e, false, dt); }
+    }
     this.pipEl.style.transform = `translate3d(${this.pip.x}px, ${this.pip.y}px, 0) scale(${depthScale(P.y)}) rotate(${U.clamp(this.pip.vx * 0.05, -14, 14)}deg)`;
     if (this.pipBub) this.placeBub();
     this.pipEl.style.zIndex = Math.round(P.y) + 1;
@@ -1021,8 +1030,9 @@ const ExploreScene = {
     if (init) e.turn = e.face;
     else if (e.turn !== e.face) { const s = Math.sign(e.face - e.turn); e.turn += s * dt * (e.type === 'wild' ? 16 : 11); if (Math.sign(e.face - e.turn) !== s) e.turn = e.face; }
     const s = depthScale(e.y) * (e.scale || 1);
-    e.el.style.transform = `translate3d(${e.x.toFixed(1)}px, ${e.y.toFixed(1)}px, 0) scale(${s.toFixed(3)})`;
-    e.el.style.zIndex = Math.round(e.y);
+    const pos = `translate3d(${e.x.toFixed(1)}px, ${e.y.toFixed(1)}px, 0) scale(${s.toFixed(3)})`, z = Math.round(e.y);
+    if (e._pos !== pos) { e.el.style.transform = pos; e._pos = pos; }
+    if (e._z !== z) { e.el.style.zIndex = z; e._z = z; }
     const tx = Math.abs(e.turn) < 0.06 ? 0.06 * Math.sign(e.turn || 1) : e.turn;
     if (e.type === 'wild' || e.type === 'player') {
       const bob = (e.bob || 0) + (e.ab || 0), rot = (e.rot || 0) + (e.ar || 0), sx = (e.sx || 1) * (e.ax || 1), sy = (e.sy || 1) * (e.ay || 1);

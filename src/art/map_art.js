@@ -87,11 +87,11 @@ const MapArt = (() => {
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
   }
 
-  const cache = {};
+  let cachedKey = null, cachedCanvas = null;
   /** bake the panorama for the current unlock state → Promise<canvas> */
   async function bake(open, arenaOpen) {
     const key = open.join(',') + '|' + (arenaOpen ? 1 : 0);
-    if (cache[key]) return cache[key];
+    if (cachedKey === key) return cachedCanvas;
     const cv = document.createElement('canvas');
     cv.width = W; cv.height = H;
     const ctx = cv.getContext('2d');
@@ -135,7 +135,7 @@ const MapArt = (() => {
       ctx.restore();
       for (let i = 2; i < b.pts.length - 1; i += 2) { ctx.beginPath(); ctx.arc(b.pts[i][0], b.pts[i][1], 3.4, 0, Math.PI * 2); ctx.fillStyle = lit ? '#fff8e0' : 'rgba(190,180,220,.5)'; ctx.fill(); }
     }
-    cache[key] = cv;
+    cachedKey = key; cachedCanvas = cv; // only the current unlock state needs a panorama
     return cv;
   }
   return { W, H, K, ISLE_AT, ARENA, node, isleCenter, arenaNode, bridges, route, bake };

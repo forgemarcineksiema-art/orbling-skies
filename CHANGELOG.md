@@ -1,5 +1,14 @@
 # Historia zmian
 
+**Wersja 3.4.4 — wydajność i pamięć.** Duże tła mają pamięć podręczną do 24 MiB i trzech obrazów;
+mapa zachowuje tylko aktualny stan odblokowania. Rozmyte wypełnienie pionowego ekranu korzysta
+z mniejszego obrazu. Gotowe klatki nie generują ponownie SVG, a gra przygotowuje animacje obecnych
+mieszkańców zamiast całego bestiariusza i niewidocznych lokacji. Postacie poza kadrem nadal żyją,
+lecz nie aktualizują niewidocznych obrazów. Zakończone zadania, dźwięki i płótna poprzednich scen
+są zwalniane. Efekty mają budżet cząsteczek i anulują opóźnione emisje przy zmianie sceny; ukryta
+karta wstrzymuje malowanie, ruch CSS i symulację eksploracji. Dodano testy cyklu życia zasobów.
+Pomiary i ograniczenia: [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
+
 **Wersja 3.4.3 — ustawienia na telefonie.** Zawartość ustawień dopasowuje się do szerokości mobilnego
 panelu. Przełączniki nie wystają poza jego prawą krawędź, a dłuższe etykiety mogą zawijać się w wierszu.
 

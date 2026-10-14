@@ -86,6 +86,7 @@ const Snd = {
     let node = osc;
     if (o.lp) { const fl = c.createBiquadFilter(); fl.type = 'lowpass'; fl.frequency.value = o.lp; osc.connect(fl); node = fl; }
     node.connect(g).connect(o.bus || this.sfxBus);
+    osc.onended = () => { osc.disconnect(); if (node !== osc) node.disconnect(); g.disconnect(); };
     osc.start(t); osc.stop(t + dur + 0.03);
   },
   _noise(dur, o = {}) {
@@ -97,6 +98,7 @@ const Snd = {
     const g = c.createGain(); const v = o.vol == null ? 0.2 : o.vol;
     g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v, t + (o.attack || 0.005)); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     src.connect(fl).connect(g).connect(o.bus || this.sfxBus);
+    src.onended = () => { src.disconnect(); fl.disconnect(); g.disconnect(); };
     src.start(t, Math.random() * 0.5); src.stop(t + dur + 0.05);
   },
   _arp(freqs, step, o = {}) { freqs.forEach((f, i) => this._tone(f, o.dur || step * 1.6, Object.assign({}, o, { delay: (o.delay || 0) + i * step }))); },
@@ -237,14 +239,14 @@ const Snd = {
     this._want = false;
   },
   _tick() {
-    const c = this.ctx; if (!c || this.suspended) return;
+    const c = this.ctx; if (!c || this.suspended || this.adMute || c.state !== 'running') return;
     const tr = TRACKS[this.cur]; if (!tr) return;
     const P = tr._parsed, sd = 60 / tr.bpm / 2, bus = tr.sfx ? this.sfxBus : this.musicBus, k = tr.sfx ? 0.6 : 1;
     if (this._next < c.currentTime - 0.5) this._next = c.currentTime + 0.05; // tab was asleep
     while (this._next < c.currentTime + 0.18) {
       if (tr.once && this._step >= P.len) { this.stopMusic(); return; }
       const i = this._step % P.len;
-      for (const ch of P.chans) {
+      for (const ch of (tr.sfx ? this.sfxOn : this.musicOn) ? P.chans : []) {
         const ev = ch.ev[i];
         if (!ev) continue;
         if (ch.drum) this._drum(ev, this._next, bus, k);
@@ -266,6 +268,7 @@ const Snd = {
     let n = osc;
     if (I.lp) { const fl = c.createBiquadFilter(); fl.type = 'lowpass'; fl.frequency.value = I.lp; osc.connect(fl); n = fl; }
     n.connect(g).connect(bus);
+    osc.onended = () => { osc.disconnect(); if (n !== osc) n.disconnect(); g.disconnect(); };
     osc.start(t); osc.stop(t + dur + 0.1);
   },
   _drum(d, t, bus = this.musicBus, k = 1) {
@@ -274,18 +277,21 @@ const Snd = {
       const o = c.createOscillator(); o.type = 'sine';
       o.frequency.setValueAtTime(150, t); o.frequency.exponentialRampToValueAtTime(42, t + 0.12);
       const g = c.createGain(); g.gain.setValueAtTime(0.5 * k, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+      o.onended = () => { o.disconnect(); g.disconnect(); };
       o.connect(g).connect(bus); o.start(t); o.stop(t + 0.2);
     }
     if (d === 's') {
       const src = c.createBufferSource(); src.buffer = this.noiseBuf;
       const fl = c.createBiquadFilter(); fl.type = 'bandpass'; fl.frequency.value = 1800;
       const g = c.createGain(); g.gain.setValueAtTime(0.22 * k, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
+      src.onended = () => { src.disconnect(); fl.disconnect(); g.disconnect(); };
       src.connect(fl).connect(g).connect(bus); src.start(t, Math.random() * 0.5); src.stop(t + 0.14);
     }
     if (d === 'h' || d === 'x') {
       const src = c.createBufferSource(); src.buffer = this.noiseBuf;
       const fl = c.createBiquadFilter(); fl.type = 'highpass'; fl.frequency.value = 7500;
       const g = c.createGain(); g.gain.setValueAtTime(0.07 * k, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.035);
+      src.onended = () => { src.disconnect(); fl.disconnect(); g.disconnect(); };
       src.connect(fl).connect(g).connect(bus); src.start(t, Math.random() * 0.5); src.stop(t + 0.05);
     }
   },
