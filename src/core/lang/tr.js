@@ -1,6 +1,8 @@
 'use strict';
 /* Türkçe (tr) — translated from English. Missing keys fall back to English; merge new ones with tools/i18n.js. */
 LX('tr', {
+  "ui.save_failed": "İlerleme kaydedilemedi. Bu sayfayı açık tut ve tarayıcı depolamasında yer aç.",
+  "ti.save_bad": "Kayıt yüklenemedi. Kayıt korundu; yeni bir oyun başlatmak onun yerine geçer.",
   "ui.yes": "Evet",
   "ui.no": "Hayır",
   "ui.ok": "Tamam",

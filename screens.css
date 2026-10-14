@@ -802,6 +802,10 @@
 #game.pk-pill.port .modal-back:not(.sheet-back) { padding-top: calc(var(--pb) + 34px); }
 
 /* 3.4 (bigger type): the settings' language buttons get a row of their own under the label on a phone */
+.port .settings { min-width: 0; width: 100%; }
+.port .set-row { gap: 12px; }
+.port .set-row > span { min-width: 0; }
+.port .set-row .toggle { flex: none; }
 .port .lang-row { flex-direction: column; align-items: stretch; }
 .port .lang-grid { max-width: none; justify-content: center; }
 /* a move's name may take two lines on a phone (the buttons are tall there) instead of being cut */

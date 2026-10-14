@@ -31,6 +31,9 @@ The whole game is about 620 KB zipped.
 
 ## Run
 
+On a phone, open a hosted copy in Chrome or Safari. Downloading this repository alone does not start the game.
+Progress is stored in that browser on that device; clearing site data removes it. Use the same game URL and browser to continue.
+
 ```bash
 python -m http.server 8080
 ```
@@ -44,6 +47,18 @@ node tools/build.js
 ```
 
 Builds `dist/web`, `dist/poki` and `dist/crazygames`, each with a ready zip.
+
+## Checks
+
+```bash
+STRICT=1 node tools/check.js
+node tools/artcheck.js
+node tools/smoke.js
+node tools/regression.js
+```
+
+GitHub Actions runs these checks and builds all three distributions on pushes and pull requests.
+The balance tools use the real battle turn implementation with a seeded RNG (`SEED`, `SIGN`, and `N` environment variables).
 
 ## Controls
 

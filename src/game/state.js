@@ -11,29 +11,52 @@ const GEM_COINS = 100; // 2.7 dropped the second currency: leftover gems are wor
 const Game = {
   s: null,
   _dirty: false,
+  _saveFailed: false,
+  _loadFailed: false,
 
   /* ---------------- persistence ---------------- */
   hasSave() { return !!Platform.storeGet(SAVE_KEY); },
   load() {
     const raw = Platform.storeGet(SAVE_KEY);
     if (!raw) return false;
+    const previous = this.s;
     try {
       const d = JSON.parse(raw);
-      if (!d || !d.v || !d.mons) return false;
+      if (!d || !Number.isInteger(d.v) || d.v < 1 || d.v > SAVE_V || !d.mons) throw new Error('unsupported save');
       const old = d.v < SAVE_V;
       this.s = this.migrate(d);
+      this.validate(this.s);
       if (old) Medals.seeAll(); // medals already earned in v1 are claimable without a toast flood
       Base.noteAbsence(d.savedAt); // a welcome-back gift after 3+ days away
       Camp.cleanup();
+      this._loadFailed = false;
       return true;
-    } catch (e) { console.warn('bad save', e); return false; }
+    } catch (e) { this.s = previous; this._loadFailed = true; console.warn('bad save', e); return false; }
+  },
+  /** Fill fields added by older releases, but never silently replace malformed existing data. */
+  fillMissing(d, defaults) {
+    if (!d || typeof d !== 'object' || Array.isArray(d)) throw new Error('invalid save object');
+    for (const k of Object.keys(defaults)) {
+      const v = defaults[k];
+      if (d[k] === undefined) d[k] = v;
+      else if (Array.isArray(v)) { if (!Array.isArray(d[k])) throw new Error('invalid save array: ' + k); }
+      else if (v && typeof v === 'object') this.fillMissing(d[k], v);
+    }
+  },
+  validate(d) {
+    if (!ZONES[d.loc.zone] || !d.team.length || d.team.length > TEAM_MAX) throw new Error('invalid save location/team');
+    const ids = d.team.concat(d.box);
+    if (new Set(ids).size !== ids.length || ids.some(id => !d.mons[id])) throw new Error('invalid save roster');
+    for (const [id, m] of Object.entries(d.mons)) {
+      if (!m || m.id !== id || !SPECIES[m.sp] || !Number.isInteger(m.lv) || m.lv < 1 || m.lv > MAX_LV || !Number.isFinite(m.hp) || m.hp < 0 || !Number.isFinite(m.xp) || m.xp < 0) throw new Error('invalid saved Orbling');
+      if (!m.pot || ['hp', 'atk', 'mag', 'def', 'spd'].some(k => !Number.isFinite(m.pot[k]) || m.pot[k] <= 0)) throw new Error('invalid saved potential');
+      if (!Array.isArray(m.moves) || !Array.isArray(m.equip) || !m.equip.length || m.equip.length > 4 || m.moves.some(x => !MOVES[x]) || m.equip.some(x => !MOVES[x] || !m.moves.includes(x))) throw new Error('invalid saved moves');
+    }
+    if (!Number.isFinite(d.coins) || d.coins < 0 || !Number.isInteger(d.tamer.lv) || d.tamer.lv < 1 || !Number.isFinite(d.tamer.xp) || !Number.isInteger(d.quests.main) || d.quests.main < 0 || d.quests.main > MAIN_QUESTS.length) throw new Error('invalid save progress');
   },
   migrate(d) {
     const def = this.blank();
-    for (const k in def) if (d[k] === undefined) d[k] = def[k];
-    for (const k in def.stats) if (d.stats[k] === undefined) d.stats[k] = def.stats[k];
-    for (const k in def.settings) if (d.settings[k] === undefined) d.settings[k] = def.settings[k];
-    for (const k in def.camp) if (d.camp[k] === undefined) d.camp[k] = def.camp[k];
+    this.fillMissing(d, def);
     // v1 → v2: new main quests were inserted into the chain, so re-point the index by quest id
     if (d.v < 2) {
       const oldId = 'q' + (d.quests.main + 1);
@@ -67,12 +90,18 @@ const Game = {
     return d;
   },
   save() {
-    if (!this.s) return;
+    if (!this.s || this._loadFailed) return false;
+    const savedAt = this.s.savedAt;
     this.s.savedAt = Date.now();
-    Platform.storeSet(SAVE_KEY, JSON.stringify(this.s));
-    this._dirty = false;
+    let ok = false;
+    try { ok = Platform.storeSet(SAVE_KEY, JSON.stringify(this.s)); } catch (e) { /* serialization failed */ }
+    this._dirty = !ok;
+    if (!ok) this.s.savedAt = savedAt;
+    if (!ok && !this._saveFailed && typeof UI !== 'undefined' && UI.toasts) UI.toast(t('ui.save_failed'), 'bad');
+    this._saveFailed = !ok;
+    return ok;
   },
-  wipe() { Platform.storeRemove(SAVE_KEY); this.s = null; },
+  wipe() { Platform.storeRemove(SAVE_KEY); this.s = null; this._loadFailed = false; this._saveFailed = false; },
 
   blank() {
     return {
@@ -99,6 +128,7 @@ const Game = {
   },
   newGame(name, look, starter) {
     this.s = this.blank();
+    this._loadFailed = false; this._saveFailed = false;
     this.s.name = name;
     this.s.look = look;
     this.s.settings.lang = LANG;

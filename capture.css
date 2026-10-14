@@ -118,3 +118,8 @@
 #game.lite .cp-title { filter: drop-shadow(0 5px 0 #2a1400); }
 #game.lite .cp-grade.g3 { filter: drop-shadow(0 4px 0 #2a1400); }
 #game.lite .b-dial.aiming .bd-orb { animation: none; }
+
+/* Keep notices readable on a phone's scaled landscape stage. */
+#game .toast:not(.cheer) { font-size: var(--notice-font, 21px); max-width: calc(100% - 40px); overflow-wrap: anywhere; }
+#game .ch-sub { font-size: var(--notice-sub-font, 19px); }
+.ti-save-error { max-width: 760px; color: #fff; font-size: 22px; text-align: center; padding: 12px; }

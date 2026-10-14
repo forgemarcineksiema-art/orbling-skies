@@ -11,7 +11,7 @@ const BL = {
     const maxEn = SPECIES[mon.sp].sign === 'aquarius' ? 13 : 10; // Flow: a bigger energy tank
     return {
       mon, side, sp: SPECIES[mon.sp], st, maxHp, en: o.en != null ? Math.min(o.en, maxEn) : maxEn, maxEn,
-      stages: { atk: 0, mag: 0, def: 0, spd: 0 }, status: null, stTurns: 0, first: true, fainted: false, hpMult: o.hpMult || 1,
+      stages: { atk: 0, mag: 0, def: 0, spd: 0 }, status: null, stTurns: 0, first: o.first !== false, fainted: false, hpMult: o.hpMult || 1,
     };
   },
   refresh(f) {
@@ -32,7 +32,7 @@ const BL = {
     if (m.sure || a.sp.sign === 'sagittarius' || !m.acc) return 1;
     return m.acc / 100;
   },
-  dodgeChance(d) { return d.sp.sign === 'pisces' ? 0.12 : 0; },
+  dodgeChance(d, a, id) { return d.sp.sign === 'pisces' && !(a && (a.sp.sign === 'sagittarius' || MOVES[id] && MOVES[id].sure)) ? 0.12 : 0; },
   critChance(a, id) { return 0.0625 + (MOVES[id].crit || 0) + (a.sp.sign === 'leo' ? 0.2 : 0) + (a.side === 'p' && typeof Base !== 'undefined' ? Base.crit(a.mon) : 0); },
   /** Scorpio's Venom: chance that a physical hit poisons */
   venomChance(a, id) { return MOVES[id].cat === 'phys' && a.sp.sign === 'scorpio' ? 0.35 : 0; },

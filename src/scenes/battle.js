@@ -24,7 +24,7 @@ const BattleScene = {
     this.eTeam = p.enemies;
     this.zoneId = p.zone || 'clover';
     this.alpha = !!p.alpha;
-    this.enMap = {}; this.stMap = {}; this.leveled = new Set(); this.skipXp = null; this.xpLog = {}; this.endured = new Set();
+    this.enMap = {}; this.stMap = {}; this.firstMap = {}; this.leveled = new Set(); this.skipXp = null; this.xpLog = {}; this.endured = new Set();
     this.hintShown = {};
     this.autoHold = false;
     const z = ZONES[this.zoneId] || (this.zoneId === 'yard' ? YARD : HOME); // a visitor at the Base
@@ -606,6 +606,7 @@ const BattleScene = {
       else await this.applyStatus(D, m.status[0]);
     }
     A.first = false;
+    if (A.side === 'p') this.firstMap[A.mon.id] = false;
   },
   async attack(A, D, id, charged) {
     const m = MOVES[id], nm = this.nameOf(A);
@@ -615,7 +616,7 @@ const BattleScene = {
       await this.say(t('b.miss', { name: nm }), 800);
       return;
     }
-    if (Math.random() < BL.dodgeChance(D)) {
+    if (Math.random() < BL.dodgeChance(D, A, id)) {
       await FX.attack(id, this.fxc(A, D, true));
       U.anim(D.slot.wrap, [{ transform: 'translateX(0)' }, { transform: `translateX(${D.side === 'e' ? 70 : -70}px)` }, { transform: 'translateX(0)' }], { duration: 420 });
       Snd.play('miss');
@@ -774,7 +775,7 @@ const BattleScene = {
   async sendPlayer(idx) {
     if (this.charge && this.charge.f !== this.e) this.setCharge(null);
     const mon = Game.team()[idx];
-    this.p = BL.fighter(mon, 'p', { en: this.enMap[mon.id] });
+    this.p = BL.fighter(mon, 'p', { en: this.enMap[mon.id], first: this.firstMap[mon.id] });
     const kept = this.stMap[mon.id];
     if (kept && kept.status && mon.hp > 0) { this.p.status = kept.status; this.p.stTurns = kept.stTurns; }
     this.setSprite(this.monP, this.p);
@@ -786,6 +787,7 @@ const BattleScene = {
   },
   async switchPlayer(idx) {
     this.enMap[this.p.mon.id] = this.p.en;
+    this.firstMap[this.p.mon.id] = this.p.first;
     this.stMap[this.p.mon.id] = { status: this.p.status, stTurns: this.p.stTurns };
     await this.say(t('b.back', { name: this.p.sp.name }), 500);
     this.statusOverlay(this.monP, null);
