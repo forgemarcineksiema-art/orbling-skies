@@ -377,3 +377,6 @@ img.ghost { filter: brightness(0) invert(.55) opacity(.16); }
 .galaxy.mapopen .gx-title, .galaxy.mapopen .gx-sub, .galaxy.mapopen .gx-back, .galaxy.mapopen .gx-obs { visibility: hidden; }
 .galaxy.mapopen .gx-isle, .galaxy.mapopen .gx-route, .galaxy.mapopen .gx-ship { visibility: hidden; }
 .gxm-node .gxm-q { left: auto; right: -20px; top: -24px; margin-left: 0; }
+
+/* Suspend CSS-only motion while the page is hidden. */
+#game.backgrounded *, #game.backgrounded *::before, #game.backgrounded *::after { animation-play-state: paused !important; }

@@ -101,11 +101,15 @@ const UI = {
     try {
       if (wipe) { this.fade.style.pointerEvents = 'auto'; await this.wipe(true); } else await this.fadeTo(1);
       if (this.cur && this.cur.exit) this.cur.exit();
+      Painter.cancelQueued();
       this.closeAll(true);
       this._talkEnd.forEach(fn => fn()); this._talkEnd = []; this.talking = 0;
       this.modals.innerHTML = '';
+      // Singleton scenes can retain detached nodes; release their large canvas backing stores now.
+      for (const canvas of this.scene.querySelectorAll('canvas')) canvas.width = canvas.height = 1;
       this.scene.innerHTML = '';
       this.scene.className = '';
+      VFX.clear();
       this.fx.innerHTML = '';
       this.cur = scene;
       this.hudShow(false);

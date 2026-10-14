@@ -201,7 +201,7 @@ onmessage = async e => {
   } catch (err) { postMessage({ id, err: String(err) }); }
 };`;
       const wurl = URL.createObjectURL(new Blob([src], { type: 'text/javascript' }));
-      const n = Math.max(1, Math.min(3, ((typeof navigator !== 'undefined' && navigator.hardwareConcurrency) || 2) - 1));
+      const n = Math.max(1, Math.min(navigator.deviceMemory && navigator.deviceMemory <= 4 ? 1 : 2, ((typeof navigator !== 'undefined' && navigator.hardwareConcurrency) || 2) - 1));
       for (let i = 0; i < n; i++) {
         const w = new Worker(wurl);
         w.pending = 0;
@@ -209,6 +209,7 @@ onmessage = async e => {
         w.onerror = () => { const i2 = workers.indexOf(w); if (i2 >= 0) workers.splice(i2, 1); for (const [id, j] of wjobs) if (j.w === w) { wjobs.delete(id); j.rej(new Error('worker')); } };
         workers.push(w);
       }
+      URL.revokeObjectURL(wurl);
     }
   } catch (e) { workers.length = 0; }
   const inWorker = (bmp, o) => new Promise((res, rej) => {
@@ -244,7 +245,8 @@ onmessage = async e => {
   const load = src => new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = src; });
   const idle = fn => (typeof requestIdleCallback === 'function' ? requestIdleCallback(fn, { timeout: 1200 }) : setTimeout(fn, 120));
   function pump() {
-    while (running < workers.length + 1 && queue.length) {
+    if (holds.has('hidden')) return;
+    while (running < Math.max(1, workers.length) && queue.length) {
       const job = queue.shift();
       running++;
       job().finally(() => { running--; pump(); });
@@ -267,6 +269,8 @@ onmessage = async e => {
   function bake(key, svgText, o) {
     if (done.has(key)) return Promise.resolve(done.get(key));
     if (jobs.has(key)) { promote(key, o); return jobs.get(key); }
+    // Generate vectors only after both cache checks, including for async callers.
+    if (typeof svgText === 'function') svgText = svgText();
     const vurl = U.svgUrl('pv:' + key, () => svgText);
     vec.set(key, vurl);
     if (!ok) { done.set(key, vurl); return Promise.resolve(vurl); }
@@ -286,14 +290,17 @@ onmessage = async e => {
             let blob = null;
             if (workers.length) { try { blob = await inWorker(await createImageBitmap(S), oo); } catch (e) { blob = null; } }
             if (!blob) { const F = K.finish(S, oo); blob = await new Promise(r => F.toBlob(r, webp ? 'image/webp' : 'image/png', 0.94)); }
+            S.width = S.height = 1; // release the main-thread raster backing store
             if (blob) { url = URL.createObjectURL(blob); idbPut(dbKey, blob); }
           }
         } catch (e) { console.warn('paint', key, e); }
         url = url || vurl;
         done.set(key, url);
         upgrade(key, url);
+        jobs.delete(key); // completed promises must not retain the job and SVG text
         res(url);
       };
+      job.cancel = () => { waiting.delete(key); jobs.delete(key); res(vurl); };
       waiting.set(key, job);
       if (o.urgent) queue.unshift(job); else if (o.low) later.push(job); else queue.push(job);
       pump();
@@ -318,17 +325,23 @@ onmessage = async e => {
     return get('ic:' + key, svgFn, Object.assign({ w, h, px: k, ink: '#0a121b', inkW: 1.1, bs: 0.42, tex: 0.3, light: 0.3, shade: 0.28, rim: null, box: [0, 0, w, h], step1: 9, step2: 5.5, detail: 120 }, o));
   }
   /** queue background paintings (lowest priority) */
-  function prefetch(list) { for (const [key, svgFn, o] of list) if (!done.has(key) && !jobs.has(key)) bake(key, svgFn(), Object.assign({}, o, { low: true })); }
+  function prefetch(list) { for (const [key, svgFn, o] of list) if (!done.has(key) && !jobs.has(key)) bake(key, svgFn, Object.assign({}, o, { low: true })); }
   /** synchronous: the painted url when ready, else the vector stand-in (and the bake is queued) */
   function get(key, svgFn, o) {
     if (done.has(key)) return done.get(key);
-    if (!jobs.has(key)) bake(key, svgFn(), o); else promote(key, o);
+    if (!jobs.has(key)) bake(key, svgFn, o); else promote(key, o);
     return vec.get(key);
   }
   const has = key => done.has(key);
   const busy = () => running > 0 || queue.length > 0;
   /** hold(reason, on): background prefetching waits while any reason holds it (battles, ads) — what is needed now still paints */
-  function hold(reason, on) { if (on) holds.add(reason); else if (holds.delete(reason) && !holds.size) pump(); }
+  function hold(reason, on) { if (on) holds.add(reason); else if (holds.delete(reason)) pump(); }
   const ready = keys => Promise.all(keys.map(k => jobs.get(k) || Promise.resolve()));
-  return { bake, get, has, busy, ready, prefetch, icon, hold, kernel: K, ok: () => ok, usesWorker: () => workers.length };
+  // A scene transition no longer needs its queued frames. Resolve callers with the vector
+  // fallback; a future request can paint it normally. In-flight worker jobs finish safely.
+  function cancelQueued() {
+    for (const job of [...queue.splice(0), ...later.splice(0)]) job.cancel();
+  }
+  const stats = () => ({ images: done.size, jobs: jobs.size, queued: queue.length, background: later.length, running, workers: workers.length });
+  return { bake, get, has, busy, ready, prefetch, icon, hold, cancelQueued, stats, kernel: K, ok: () => ok, usesWorker: () => workers.length };
 })();

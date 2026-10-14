@@ -23,6 +23,8 @@ jobs:
         run: node tools/smoke.js
       - name: Storage and battle regressions
         run: node tools/regression.js
+      - name: Rendering resource lifecycles
+        run: node tools/perfcheck.js
       - name: Build all distributions
         run: node tools/build.js
       - name: Bundled JavaScript syntax
