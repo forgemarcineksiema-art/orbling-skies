@@ -1,6 +1,8 @@
 'use strict';
 /* Deutsch (de) — translated from English. Missing keys fall back to English; merge new ones with tools/i18n.js. */
 LX('de', {
+  "ui.save_failed": "Der Fortschritt konnte nicht gespeichert werden. Lass diese Seite geöffnet und schaffe Platz im Browserspeicher.",
+  "ti.save_bad": "Dein Spielstand konnte nicht geladen werden. Er wurde aufbewahrt; ein neues Spiel ersetzt ihn.",
   "ui.yes": "Ja",
   "ui.no": "Nein",
   "ui.ok": "OK",

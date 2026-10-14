@@ -1,0 +1,29 @@
+name: Game checks
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Data and complete translations
+        run: STRICT=1 node tools/check.js
+      - name: Procedural art
+        run: node tools/artcheck.js
+      - name: Game logic and save migrations
+        run: node tools/smoke.js
+      - name: Storage and battle regressions
+        run: node tools/regression.js
+      - name: Build all distributions
+        run: node tools/build.js
+      - name: Bundled JavaScript syntax
+        run: node --check dist/web/game.js

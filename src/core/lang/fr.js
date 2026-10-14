@@ -1,6 +1,8 @@
 'use strict';
 /* Français (fr) — translated from English. Missing keys fall back to English; merge new ones with tools/i18n.js. */
 LX('fr', {
+  "ui.save_failed": "Impossible de sauvegarder la progression. Gardez cette page ouverte et libérez de l’espace dans le stockage du navigateur.",
+  "ti.save_bad": "Impossible de charger votre sauvegarde. Elle a été conservée ; une nouvelle partie la remplacera.",
   "ui.yes": "Oui",
   "ui.no": "Non",
   "ui.ok": "OK",

@@ -1,6 +1,8 @@
 'use strict';
 /* Русский (ru) — translated from English. Missing keys fall back to English; merge new ones with tools/i18n.js. */
 LX('ru', {
+  "ui.save_failed": "Не удалось сохранить прогресс. Не закрывайте эту страницу и освободите место в хранилище браузера.",
+  "ti.save_bad": "Не удалось загрузить сохранение. Оно сохранено; новая игра заменит его.",
   "ui.yes": "Да",
   "ui.no": "Нет",
   "ui.ok": "ОК",

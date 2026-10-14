@@ -1,5 +1,16 @@
 # Historia zmian
 
+**Wersja 3.4.3 — ustawienia na telefonie.** Zawartość ustawień dopasowuje się do szerokości mobilnego
+panelu. Przełączniki nie wystają poza jego prawą krawędź, a dłuższe etykiety mogą zawijać się w wierszu.
+
+**Wersja 3.4.2 — zapis i zasady walki.** Nieudany zapis pozostawia postęp oczekujący na ponowienie i pokazuje
+komunikat. Nieprawidłowy zapis nie staje się aktywnym stanem i nie jest nadpisywany przez autosave; ekran
+tytułowy wyjaśnia problem, a nowa gra wymaga potwierdzenia zastąpienia zapisu. Migracje uzupełniają także
+brakujące pola zagnieżdżone. Premia pierwszego ataku Barana pozostaje wykorzystana po zmianie Orblinga
+lub ożywieniu; pewne trafienia i Strzelec omijają unik Ryb. Powiadomienia mają większy tekst na telefonie
+w poziomie. Symulatory używają rzeczywistej logiki tur `BattleScene` i powtarzalnego losowania. Dodano
+testy regresji oraz kontrole danych, tłumaczeń, grafiki, zapisu i budowania w GitHub Actions.
+
 **Wersja 3.4.1 — pora dnia bez „przyciemnionego ekranu”.** Świt (5–8), zmierzch (18–21) i noc (21–5) były
 półprzezroczystą płachtą na całej scenie: postacie, Orblingi i drzewa szarzały, a HUD zostawał jasny — wyglądało to jak
 błąd. Teraz tło strefy jest malowane na daną porę raz, przy wypalaniu (`Scenery` → TIME OF DAY): niebo dostaje własne

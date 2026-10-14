@@ -39,10 +39,13 @@ const TitleScene = {
     const btns = U.el('div', { class: 'ti-btns' });
     // (3.4: a returning player skips this screen; it shows up when their save could not be read — then "Continue"
     // is only offered if it can really continue)
-    if (Game.hasSave() && (Game.s || Game.load())) {
+    if (Game.hasSave() && !Game._loadFailed && (Game.s || Game.load())) {
       btns.append(U.el('button', { class: 'btn lg green pulse', text: t('ti.continue'), onclick: () => this.start(false) }),
         U.el('button', { class: 'btn sm white', text: t('ti.new'), onclick: async () => { if (await UI.confirm(t('ti.new_q'))) this.start(true); } }));
-    } else btns.append(U.el('button', { class: 'btn lg green pulse', text: t('ti.play'), onclick: () => this.start(true) }));
+    } else {
+      if (Game._loadFailed) btns.appendChild(U.el('p', { class: 'ti-save-error', text: t('ti.save_bad') }));
+      btns.append(U.el('button', { class: 'btn lg green pulse', text: t('ti.play'), onclick: async () => { if (!Game.hasSave() || await UI.confirm(t('ti.new_q'))) this.start(true); } }));
+    }
     root.appendChild(btns);
     root.appendChild(U.el('div', { class: 'ti-corner' },
       U.el('button', { class: 'rbtn snd', html: WArt.icon('settings', 28), onclick: () => Menus.settings() }),

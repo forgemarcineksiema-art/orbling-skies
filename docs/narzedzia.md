@@ -44,6 +44,13 @@ node tools/sim.js
 ```
 
 Symulacje pojedynków AI vs AI (balans, liczba tur); `node tools/sim_teams.js` — walki 3v3 ze Strażnikami każdej wyspy.
+Od 3.4.2 oba narzędzia wykonują rzeczywiste tury `BattleScene`, z atrapami grafiki, dźwięku i nagród.
+Uwzględniają statusy, cechy, energię, odrzut, wysysanie HP i zapowiadane ataki Strażników.
+Parametry: `SEED=20261014`, `SIGN=libra` (Ascendent), `N=300` / `N=150`; te same parametry dają powtarzalny wynik.
+Symulacje nie obejmują decyzji gracza o przedmiotach i reklamach ani zdobywania XP podczas walki.
+
+`node tools/regression.js` — błędy zapisu i odczytu, ochrona oryginalnego zapisu, premia pierwszego ataku,
+pewne trafienie przeciw Rybom, energia Wodnika i powtarzalność symulacji. Kontrole uruchamia także GitHub Actions.
 
 - `tools/gallery.html` — galeria wszystkich 48 Orblingów (`?shiny`, `?s=300`, `?only=sunkit,finnip`)
 - `tools/world.html` — tła biomów (`?m=bg`, pojedyncze w pełnym rozmiarze: `?m=one&b=forest`), rekwizyty (`?m=props`), postacie/przedmioty/wyspy (`?m=people`), wszyscy trenerzy (`?m=tamers`)

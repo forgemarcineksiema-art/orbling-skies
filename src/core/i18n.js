@@ -43,6 +43,8 @@ function L(obj) { for (const k in obj) { I18N.en[k] = obj[k][0]; I18N.pl[k] = ob
 function LX(lang, obj) { Object.assign(I18N[lang] || (I18N[lang] = {}), obj); }
 
 L({
+  'ui.save_failed': ['Progress could not be saved. Keep this page open and free some browser storage.', 'Nie udało się zapisać postępu. Nie zamykaj tej strony i zwolnij miejsce w pamięci przeglądarki.'],
+  'ti.save_bad': ['Your save could not be loaded. It has been kept; starting a new game will replace it.', 'Nie udało się wczytać zapisu. Zachowaliśmy go; rozpoczęcie nowej gry go zastąpi.'],
   // ---- generic UI ----
   'ui.yes': ['Yes', 'Tak'], 'ui.no': ['No', 'Nie'], 'ui.ok': ['OK', 'OK'], 'ui.cancel': ['Cancel', 'Anuluj'], 'ui.next': ['Next', 'Dalej'],
   'ui.battle': ['Battle!', 'Walcz!'], 'ui.later': ['Later', 'Później'], 'ui.show': ['Show', 'Pokaż'], 'ui.lv': ['Lv', 'Poz.'],
