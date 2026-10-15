@@ -1,5 +1,13 @@
 # Historia zmian
 
+**Wersja 3.5.0 — zarządzanie zasobami i odporność.** Cache sprite’ów i SVG usuwa stare zasoby,
+pełne animacje postaci powstają po wejściu w kadr, a świat pod pełnoekranowym menu jest wstrzymany.
+Zawieszone zadania graficzne mają limity czasu; przy braku sprawnego pracownika gra korzysta
+z lżejszego rastra zamiast blokować obsługę dotyku. Poprawiono sprzątanie asynchronicznych sekwencji,
+powrót po błędzie otwierania ekranu, powtórne wypuszczenie Orblinga i oczekiwanie na SDK portali.
+Dodano regresje i powtarzalne scenariusze awarii przeglądarki. [Pełny przegląd](docs/REVIEW-3.5.0.md).
+
+
 **Wersja 3.4.4 — wydajność i pamięć.** Duże tła mają pamięć podręczną do 24 MiB i trzech obrazów;
 mapa zachowuje tylko aktualny stan odblokowania. Rozmyte wypełnienie pionowego ekranu korzysta
 z mniejszego obrazu. Gotowe klatki nie generują ponownie SVG, a gra przygotowuje animacje obecnych

@@ -169,6 +169,29 @@ function PAINT_KERNEL(mk) {
 const Painter = (() => {
   const done = new Map();     // key → baked url
   const jobs = new Map();     // key → Promise<url>
+  const costs = new Map(), sceneKeys = new Set();
+  const budget = 48 * 1024 * 1024; // retained sprite pixels + encoded blobs; active frames are protected
+  let retainedBytes = 0, trimTimer = 0;
+  function touch(key) { const u = done.get(key); done.delete(key); done.set(key, u); return u; }
+  function requestTrim() {
+    if (!trimTimer) trimTimer = setTimeout(() => { trimTimer = 0; trim(); }, 500);
+  }
+  function trim() {
+    const keep = U.visibleArtUrls();
+    for (const key of sceneKeys) { if (done.has(key)) keep.add(done.get(key)); if (vec.has(key)) keep.add(vec.get(key)); }
+    for (const key of jobs.keys()) if (vec.has(key)) keep.add(vec.get(key));
+    for (const [key, url] of done) {
+      if (retainedBytes <= budget && done.size <= 160) break;
+      if (keep.has(url)) continue;
+      done.delete(key); retainedBytes -= costs.get(key) || 0; costs.delete(key);
+      if (url !== vec.get(key) && url.startsWith('blob:')) URL.revokeObjectURL(url);
+      vec.delete(key);
+    }
+    // A failed bake can use a vector as its finished result. Keep that URL valid too.
+    for (const [key, url] of done) if (url === vec.get(key)) keep.add(url);
+    U.trimSvg(keep);
+  }
+  function beginScene() { sceneKeys.clear(); requestTrim(); }
   const vec = new Map();      // key → vector url shown meanwhile (for in-place upgrades)
   const queue = [], later = []; // later: background prefetch, only when nothing else waits
   const waiting = new Map();  // key → its job while still queued (so a more urgent request can move it forward)
@@ -187,11 +210,14 @@ const Painter = (() => {
   try {
     if (typeof Worker !== 'undefined' && typeof OffscreenCanvas !== 'undefined' && typeof createImageBitmap !== 'undefined' && new OffscreenCanvas(2, 2).getContext('2d')) {
       const src = `const PAINT_KERNEL = ${PAINT_KERNEL.toString()};
-const K = PAINT_KERNEL((w, h) => new OffscreenCanvas(Math.max(1, Math.round(w)), Math.max(1, Math.round(h))));
+let transient = null;
+const K = PAINT_KERNEL((w, h) => { const c = new OffscreenCanvas(Math.max(1, Math.round(w)), Math.max(1, Math.round(h))); if (transient) transient.push(c); return c; });
+K.texture(); // one persistent texture; per-job canvases below are explicitly released
 onmessage = async e => {
   const { id, bmp, o, type } = e.data;
+  transient = [];
   try {
-    const S = new OffscreenCanvas(bmp.width, bmp.height);
+    const S = new OffscreenCanvas(bmp.width, bmp.height); transient.push(S);
     S.getContext('2d').drawImage(bmp, 0, 0);
     if (bmp.close) bmp.close();
     const F = K.finish(S, o);
@@ -199,25 +225,34 @@ onmessage = async e => {
     try { blob = await F.convertToBlob({ type, quality: 0.94 }); } catch (err) { blob = await F.convertToBlob({ type: 'image/png' }); }
     postMessage({ id, blob });
   } catch (err) { postMessage({ id, err: String(err) }); }
+  finally { if (bmp.close) bmp.close(); for (const c of transient) c.width = c.height = 1; transient = null; }
 };`;
       const wurl = URL.createObjectURL(new Blob([src], { type: 'text/javascript' }));
       const n = Math.max(1, Math.min(navigator.deviceMemory && navigator.deviceMemory <= 4 ? 1 : 2, ((typeof navigator !== 'undefined' && navigator.hardwareConcurrency) || 2) - 1));
       for (let i = 0; i < n; i++) {
         const w = new Worker(wurl);
         w.pending = 0;
-        w.onmessage = e => { const j = wjobs.get(e.data.id); if (!j) return; wjobs.delete(e.data.id); w.pending--; if (e.data.err) j.rej(new Error(e.data.err)); else j.res(e.data.blob); };
-        w.onerror = () => { const i2 = workers.indexOf(w); if (i2 >= 0) workers.splice(i2, 1); for (const [id, j] of wjobs) if (j.w === w) { wjobs.delete(id); j.rej(new Error('worker')); } };
+        w.onmessage = e => { const j = wjobs.get(e.data.id); if (!j) return; wjobs.delete(e.data.id); clearTimeout(j.timer); w.pending--; if (e.data.err) j.rej(new Error(e.data.err)); else j.res(e.data.blob); };
+        w.onerror = () => failWorker(w);
         workers.push(w);
       }
       URL.revokeObjectURL(wurl);
     }
-  } catch (e) { workers.length = 0; }
+  } catch (e) { for (const w of workers) w.terminate(); workers.length = 0; }
+  function failWorker(w) {
+    const i = workers.indexOf(w); if (i >= 0) workers.splice(i, 1);
+    w.terminate();
+    for (const [id, j] of wjobs) if (j.w === w) { clearTimeout(j.timer); wjobs.delete(id); j.rej(new Error('paint worker failed or timed out')); }
+    w.pending = 0;
+  }
   const inWorker = (bmp, o) => new Promise((res, rej) => {
     const w = workers.reduce((a, b) => (a.pending <= b.pending ? a : b));
     const id = ++wseq;
     w.pending++;
-    wjobs.set(id, { res, rej, w });
-    w.postMessage({ id, bmp, o, type: webp ? 'image/webp' : 'image/png' }, [bmp]);
+    const timer = setTimeout(() => failWorker(w), 8000);
+    wjobs.set(id, { res, rej, w, timer });
+    try { w.postMessage({ id, bmp, o, type: webp ? 'image/webp' : 'image/png' }, [bmp]); }
+    catch (e) { if (bmp.close) bmp.close(); failWorker(w); }
   });
 
   /* ---- IndexedDB cache of finished paintings ---- */
@@ -228,21 +263,24 @@ onmessage = async e => {
   function db() {
     if (dbp) return dbp;
     dbp = new Promise(res => {
+      let settled = false;
+      const finish = value => { if (settled) { if (value) value.close(); return; } settled = true; clearTimeout(timer); res(value); };
+      const timer = setTimeout(() => finish(null), 1200);
       try {
         try { indexedDB.deleteDatabase('orbling-paint'); } catch (e) { /* the pre-2.7 cache */ }
         const rq = indexedDB.open(DB, 1);
         rq.onupgradeneeded = () => rq.result.createObjectStore(STORE);
-        rq.onsuccess = () => res(rq.result);
-        rq.onerror = () => res(null);
-        rq.onblocked = () => res(null);
-      } catch (e) { res(null); }
+        rq.onsuccess = () => { rq.result.onversionchange = () => { rq.result.close(); dbp = null; }; finish(rq.result); };
+        rq.onerror = () => finish(null);
+        rq.onblocked = () => finish(null);
+      } catch (e) { finish(null); }
     });
     return dbp;
   }
-  const idbGet = async k => { const d = await db(); if (!d) return null; return new Promise(res => { try { const rq = d.transaction(STORE).objectStore(STORE).get(k); rq.onsuccess = () => res(rq.result || null); rq.onerror = () => res(null); } catch (e) { res(null); } }); };
+  const idbGet = async k => { const d = await db(); if (!d) return null; return new Promise(res => { try { const tx = d.transaction(STORE), rq = tx.objectStore(STORE).get(k); const timer = setTimeout(() => { res(null); try { tx.abort(); } catch (e) {} }, 1200); const finish = v => { clearTimeout(timer); res(v); }; rq.onsuccess = () => finish(rq.result || null); rq.onerror = () => finish(null); tx.onabort = () => finish(null); } catch (e) { res(null); } }); };
   const idbPut = async (k, v) => { const d = await db(); if (!d) return; try { d.transaction(STORE, 'readwrite').objectStore(STORE).put(v, k); } catch (e) { /* quota etc. */ } };
 
-  const load = src => new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = src; });
+  const load = src => U.loadImage(src);
   const idle = fn => (typeof requestIdleCallback === 'function' ? requestIdleCallback(fn, { timeout: 1200 }) : setTimeout(fn, 120));
   function pump() {
     if (holds.has('hidden')) return;
@@ -266,8 +304,9 @@ onmessage = async e => {
    * bake(key, svgText, o) → Promise<url>. o.w/o.h: output size in px; o.px: pixels per art unit.
    * The vector version (object URL of svgText) is what callers see until the painting lands.
    */
-  function bake(key, svgText, o) {
-    if (done.has(key)) return Promise.resolve(done.get(key));
+  function bake(key, svgText, o, lease = true) {
+    if (lease) sceneKeys.add(key);
+    if (done.has(key)) return Promise.resolve(touch(key));
     if (jobs.has(key)) { promote(key, o); return jobs.get(key); }
     // Generate vectors only after both cache checks, including for async callers.
     if (typeof svgText === 'function') svgText = svgText();
@@ -279,28 +318,30 @@ onmessage = async e => {
     const p = new Promise(res => {
       const job = async () => {
         waiting.delete(key);
-        let url = null;
+        let url = null, blobBytes = 0;
         try {
           const hit = await idbGet(dbKey);
-          if (hit) url = URL.createObjectURL(hit);
+          if (hit) { url = URL.createObjectURL(hit); blobBytes = hit.size; }
           else {
             const img = await load(vurl);
             const S = mkCanvas(o.w, o.h);
             S.getContext('2d').drawImage(img, 0, 0, o.w, o.h);
-            let blob = null;
-            if (workers.length) { try { blob = await inWorker(await createImageBitmap(S), oo); } catch (e) { blob = null; } }
-            if (!blob) { const F = K.finish(S, oo); blob = await new Promise(r => F.toBlob(r, webp ? 'image/webp' : 'image/png', 0.94)); }
+            let blob = null, painted = false;
+            if (workers.length) { try { blob = await inWorker(await createImageBitmap(S), oo); painted = !!blob; } catch (e) { blob = null; } }
+            // Without a healthy worker, use the shaded vector raster. Brush synthesis must never block input.
+            if (!blob) blob = await new Promise(r => { const timer = setTimeout(() => r(null), 2000); S.toBlob(b => { clearTimeout(timer); r(b); }, webp ? 'image/webp' : 'image/png', 0.94); });
             S.width = S.height = 1; // release the main-thread raster backing store
-            if (blob) { url = URL.createObjectURL(blob); idbPut(dbKey, blob); }
+            if (blob) { url = URL.createObjectURL(blob); blobBytes = blob.size; if (painted) idbPut(dbKey, blob); }
           }
         } catch (e) { console.warn('paint', key, e); }
         url = url || vurl;
         done.set(key, url);
+        const cost = o.w * o.h * 4 + blobBytes; costs.set(key, cost); retainedBytes += cost;
         upgrade(key, url);
         jobs.delete(key); // completed promises must not retain the job and SVG text
-        res(url);
+        res(url); requestTrim();
       };
-      job.cancel = () => { waiting.delete(key); jobs.delete(key); res(vurl); };
+      job.cancel = () => { waiting.delete(key); jobs.delete(key); vec.delete(key); res(vurl); };
       waiting.set(key, job);
       if (o.urgent) queue.unshift(job); else if (o.low) later.push(job); else queue.push(job);
       pump();
@@ -325,11 +366,11 @@ onmessage = async e => {
     return get('ic:' + key, svgFn, Object.assign({ w, h, px: k, ink: '#0a121b', inkW: 1.1, bs: 0.42, tex: 0.3, light: 0.3, shade: 0.28, rim: null, box: [0, 0, w, h], step1: 9, step2: 5.5, detail: 120 }, o));
   }
   /** queue background paintings (lowest priority) */
-  function prefetch(list) { for (const [key, svgFn, o] of list) if (!done.has(key) && !jobs.has(key)) bake(key, svgFn, Object.assign({}, o, { low: true })); }
+  function prefetch(list) { for (const [key, svgFn, o] of list) if (!done.has(key) && !jobs.has(key)) bake(key, svgFn, Object.assign({}, o, { low: true }), false); }
   /** synchronous: the painted url when ready, else the vector stand-in (and the bake is queued) */
   function get(key, svgFn, o) {
-    if (done.has(key)) return done.get(key);
-    if (!jobs.has(key)) bake(key, svgFn, o); else promote(key, o);
+    if (done.has(key)) return touch(key);
+    if (!jobs.has(key)) bake(key, svgFn, o, false); else promote(key, o);
     return vec.get(key);
   }
   const has = key => done.has(key);
@@ -342,6 +383,6 @@ onmessage = async e => {
   function cancelQueued() {
     for (const job of [...queue.splice(0), ...later.splice(0)]) job.cancel();
   }
-  const stats = () => ({ images: done.size, jobs: jobs.size, queued: queue.length, background: later.length, running, workers: workers.length });
-  return { bake, get, has, busy, ready, prefetch, icon, hold, cancelQueued, stats, kernel: K, ok: () => ok, usesWorker: () => workers.length };
+  const stats = () => ({ images: done.size, retainedBytes, budget, sceneKeys: sceneKeys.size, jobs: jobs.size, queued: queue.length, background: later.length, running, workers: workers.length });
+  return { bake, get, has, busy, ready, prefetch, icon, hold, cancelQueued, beginScene, trim, requestTrim, stats, kernel: K, ok: () => ok, usesWorker: () => workers.length };
 })();

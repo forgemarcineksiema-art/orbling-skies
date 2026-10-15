@@ -1,0 +1,24 @@
+[
+  {
+    "wait": 12000
+  },
+  {
+    "eval": "(async()=>{eval(await(await fetch('/tools/audit.js')).text());await Audit.setup();await UI.go(ExploreScene,{zone:'clover'});UI.closeAll(true);const end=performance.now()+30000;while(Painter.busy()&&performance.now()<end)await U.sleep(100);await U.sleep(700);if(UI.busyGo||Painter.busy()||__errors.length)throw Error('Scene/painting failed to settle');if([...document.images].some(i=>i.offsetParent&&(!i.complete||!i.naturalWidth)))throw Error('Broken visible art');return {version:VERSION,busy:UI.busyGo,painter:Painter.stats(),errors:__errors,broken:[...document.images].filter(i=>i.offsetParent&&(!i.complete||!i.naturalWidth)).map(i=>i.className)};})()",
+    "print": true
+  },
+  {
+    "eval": "(async()=>{const h=UI.modal({title:'Test',body:U.el('div',{text:'Test'}),sheet:true});const before=ExploreScene.time;await U.sleep(700);const paused=ExploreScene.time===before;h.close();await U.sleep(700);if(!paused||ExploreScene.time<=before||UI.covered())throw Error('Covered world did not pause/resume');return {paused,resumed:ExploreScene.time>before,covered:UI.covered(),errors:__errors};})()",
+    "print": true
+  },
+  {
+    "eval": "Menus.settings();",
+    "wait": 500
+  },
+  {
+    "shot": "settings"
+  },
+  {
+    "eval": "(async()=>{UI.closeAll(true);const state=Game.s;await UI.go({enter(){throw Error('Injected scene failure')},exit(){}});if(UI.busyGo||!document.querySelector('.scene-error-card button')||Game.s!==state)throw Error('Recovery failed');document.querySelector('.scene-error-card button').click();const end=performance.now()+30000;while(UI.busyGo&&performance.now()<end)await U.sleep(100);if(UI.busyGo||UI.cur!==ExploreScene||Game.s!==state)throw Error('Continue failed');return {recovery:true,statePreserved:true,errors:__errors};})()",
+    "print": true
+  }
+]

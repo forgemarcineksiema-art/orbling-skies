@@ -66,7 +66,7 @@ const MapArt = (() => {
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}"><defs>${C.defs}</defs>${b}</svg>`;
   }
 
-  const load = src => new Promise(res => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = src; });
+  const load = src => U.loadImage(src).catch(() => null);
   /** a little floating rock (stepping stone of the star-bridge) */
   function rock(ctx, x, y, r, hue) {
     ctx.save();

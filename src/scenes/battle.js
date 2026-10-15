@@ -88,9 +88,11 @@ const BattleScene = {
     // the painted fighters are ready before the curtain opens (or after 2.5 s at most)
     const firstE = this.eTeam.find(m => m.hp > 0), firstP = Game.team().find(m => m.hp > 0);
     await Promise.race([Promise.all([firstE && this.paintFirst(firstE), firstP && this.paintFirst(firstP)]), U.sleep(2500)]);
-    setTimeout(() => this.intro().catch(e => console.error(e)), 300);
+    this.introTimer = setTimeout(() => this.intro().catch(e => console.error(e)), 300);
   },
   exit() {
+    clearTimeout(this.introTimer);
+    for (const slot of [this.monE, this.monP]) if (slot) { slot.tok = null; slot.paint = null; }
     clearInterval(this.blinkT);
     Capture.settle(this);
     Painter.hold('battle', false);

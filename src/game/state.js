@@ -253,6 +253,7 @@ const Game = {
     this.s.box.push(m.id); return 'box';
   },
   release(id) {
+    if (!Object.hasOwn(this.s.mons, id)) return false;
     if (this.s.team.includes(id) && this.s.team.length <= 1) return false;
     Camp.stop(id);
     { const job = Base.busy(id); if (job && job !== 'dojo') Base.unassign(job); }

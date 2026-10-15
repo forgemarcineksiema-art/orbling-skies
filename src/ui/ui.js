@@ -111,14 +111,27 @@ const UI = {
       this.scene.className = '';
       VFX.clear();
       this.fx.innerHTML = '';
+      Painter.beginScene();
       this.cur = scene;
       this.hudShow(false);
       this.stageXform('');
       lay = this.portrait + ':' + this.H;
       await scene.enter(params || {});
-    } catch (e) { console.error(e); }
-    if (wipe) { await this.wipe(false); this.fade.style.pointerEvents = 'none'; } else await this.fadeTo(0);
-    this.busyGo = false;
+    } catch (e) {
+      console.error(e);
+      try { if (this.cur && this.cur.exit) this.cur.exit(); } catch (cleanupError) { console.warn(cleanupError); }
+      this.cur = null;
+      Painter.cancelQueued(); Painter.beginScene(); VFX.clear();
+      this.closeAll(true); this.hudShow(false); this.stageXform('');
+      for (const canvas of this.scene.querySelectorAll('canvas')) canvas.width = canvas.height = 1;
+      this.scene.className = 'scene-error'; this.scene.innerHTML = '';
+      this.scene.appendChild(U.el('div', { class: 'scene-error-card' },
+        U.el('p', { text: t('ui.scene_error') }),
+        U.el('button', { class: 'btn green', text: t('ti.continue'), onclick: () => this.go(Game.s ? ExploreScene : IntroScene, Game.s ? { zone: Game.s.loc.zone } : {}) })));
+    } finally {
+      try { if (wipe) await this.wipe(false); else await this.fadeTo(0); }
+      finally { this.fade.style.opacity = 0; this.fade.style.pointerEvents = 'none'; this.busyGo = false; }
+    }
     // the phone was turned while the scene was being built: lay it out for the orientation it ended up in
     if (lay && lay !== this.portrait + ':' + this.H && this.cur && this.cur.layout) this.cur.layout();
   },
@@ -157,16 +170,17 @@ const UI = {
     const back = U.el('div', { class: 'modal-back' + (o.sheet ? ' sheet-back' : '') });
     const box = U.el('div', { class: 'modal ' + (o.sheet ? 'sheet ' : '') + (o.cls || '') });
     const h = {
-      el: box, back, closed: false, closable: o.closable !== false,
+      el: box, back, sheet: !!o.sheet, closed: false, closable: o.closable !== false,
       close: (silent) => {
         if (h.closed) return;
         h.closed = true;
         this.stack = this.stack.filter(x => x !== h);
         if (!this.stack.length) this.root.classList.remove('modal-on');
+        this.root.classList.toggle('sheet-covered', this.covered());
         if (!this.stack.length && this.inGameplay()) Platform.gameplayStart();
         if (!this.stack.length && this.toastQ && this.toastQ.length) setTimeout(() => this.flushToasts(), 300);
         back.classList.add('out');
-        setTimeout(() => back.remove(), 170);
+        setTimeout(() => { back.remove(); Painter.requestTrim(); }, 170);
         if (!silent) Snd.play('close');
         if (o.onClose) o.onClose();
       },
@@ -185,6 +199,7 @@ const UI = {
     back.addEventListener('pointerdown', e => { if (e.target === back && !o.sheet && o.closable !== false && o.backClose !== false) h.close(); });
     this.modals.appendChild(back);
     this.stack.push(h);
+    this.root.classList.toggle('sheet-covered', this.covered());
     // toasts never sit on a window's title: with a window open they move to the page bar (portrait: the bottom edge);
     // the ones left over from before fade away, but news from this very moment (a level-up just before an evolution
     // page) stays readable
@@ -206,9 +221,10 @@ const UI = {
   closeAll(silent) {
     for (let n = 0; this.stack.length && n < 20; n++) for (const h of this.stack.slice()) h.close(silent);
     this.stack = [];
-    this.root.classList.remove('modal-on');
+    this.root.classList.remove('modal-on', 'sheet-covered');
   },
   anyModal() { return this.stack.length > 0 || this.talking > 0; },
+  covered() { return this.stack.some(h => h.sheet && !h.closed); },
   /** menus pause gameplay for the portal SDK; the title screen and the opening film are never gameplay */
   inGameplay() { return !!this.cur && this.cur !== TitleScene && this.cur !== PrologueScene; },
 

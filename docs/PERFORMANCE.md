@@ -39,3 +39,27 @@ Są to pojedyncze pomiary diagnostyczne. Skład dzikich stworzeń jest losowy, a
 Kontrole w prawdziwej przeglądarce objęły animacje 67 ruchów (ataki z trafieniami oraz właściwe wywołania wzmocnień i leczenia), pierwszą walkę i łapanie stworka, powrót do eksploracji, wielokrotne przejścia przez mapę, zmianę orientacji i ustawienia. Po zakończeniu serii efektów: 0 cząsteczek, 0 obiektów, 0 zaplanowanych emisji, 0 elementów `.fxp`; bez ostrzeżeń efektów. Osobno sprawdzane są zdarzenia ukrycia i wznowienia karty przez kontrolowaną właściwość `document.hidden` — nie jest to test blokady systemowej Androida/iOS.
 
 Do diagnostyki w konsoli: `Painter.stats()`, `WArt.stats()`, `VFX.stats()`. Warto ponowić profilowanie na docelowym telefonie po dłuższej sesji; nie obiecujemy identycznej płynności na każdym sprzęcie.
+
+## Przegląd 3.5.0: cache sprite’ów, awarie i praca poza kadrem
+
+W 3.5.0 wcześniejsze ograniczenie „cache obrazów postaci i SVG nadal zachowuje potrzebne wcześniej zasoby” zostało usunięte. Szczegóły konstrukcji i ograniczenia budżetów opisuje [przegląd architektury](REVIEW-3.5.0.md).
+
+Porównanie trzech rund scenariusza `tools/runtime/soak.json`: w każdej sześć lokacji i 12 zmian koloru ubrania. Chromium headless, 390×844 CSS px, DPR 2, świeży profil, ta sama inicjalizacja generatora losowego, pełna grafika; odczyt po opróżnieniu kolejki i wymuszeniu GC. Kolejność losowań świata zależy również od upływu czasu i przebiegu animacji, więc identyczny seed nie gwarantuje identycznej obsady każdej klatki.
+
+| Runda | Gotowe obrazy 3.4.4 | Gotowe obrazy 3.5.0 | Żywe URL blob 3.4.4 / 3.5.0 | Bajty blobów 3.4.4 / 3.5.0 |
+| --- | ---: | ---: | --- | --- |
+| 1 | 164 | 131 | 554 / 352 | 9 824 954 / 6 327 825 |
+| 2 | 263 | 135 | 704 / 391 | 12 158 742 / 6 957 924 |
+| 3 | 347 | 137 | 852 / 393 | 14 611 146 / 6 882 587 |
+
+W ostatniej rundzie to około 61% mniej gotowych obrazów w cache i 53% mniej bajtów śledzonych blobów. Nie jest to deklaracja redukcji całkowitego RAM o 53%. Szacowany koszt cache sprite’ów wynosił kolejno 49 776 852, 50 279 978 i 50 132 866 bajtów, poniżej budżetu 50 331 648 bajtów. Tła pozostawały na poziomie 24 883 200 bajtów. Każdy odczyt kończył się zerową kolejką i brakiem nieobsłużonych błędów. Są to trzy rundy kontrolne, a nie wielogodzinny test fizycznego telefonu.
+
+Scenariusze awarii przeszły z pustą listą uszkodzonych widocznych obrazów i nieobsłużonych wyjątków:
+
+- bez Worker oraz z otwieraniem IndexedDB, które nigdy nie kończy pracy;
+- Worker odbierający zadania, ale nieoddający wyniku;
+- CPU throttling 4× — w tym przebiegu watchdog wyłączył zbyt wolnych pracowników i gra dokończyła przygotowanie lżejszej grafiki;
+- pauza świata pod pełnoekranowym menu i wznowienie po zamknięciu;
+- wyjątek w `scene.enter()`, widoczna kontynuacja, powrót do eksploracji bez podmiany stanu gry.
+
+Końcowy przebieg samouczka: wybór startera → gotowa walka → złapanie Orblinga → drużyna dwóch → eksploracja, zakończony samouczek i istniejący zapis. Ustawienia sprawdzono wizualnie na mobilnym widoku. Testy danych, grafiki, zapisu, prawdziwych tur walki, cyklu życia zasobów i budowania wszystkich trzech dystrybucji przechodzą. Wyniki 4× dotyczą odporności i ukończenia operacji, nie gwarantowanych 60 FPS.

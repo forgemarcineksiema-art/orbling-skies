@@ -70,3 +70,7 @@ The balance tools use the real battle turn implementation with a seeded RNG (`SE
 ## License
 
 © Marcin Płaza. All rights reserved. Fonts (Rubik, Pangolin, Lilita One) are under the SIL OFL, see `assets/fonts/`.
+
+## Runtime review
+
+Version 3.5.0 adds bounded graphics caches, on-screen animation preparation and recovery from stalled rendering tasks. See the [architecture review](docs/REVIEW-3.5.0.md) and [performance measurements](docs/PERFORMANCE.md) for fixes, tests and remaining limits.

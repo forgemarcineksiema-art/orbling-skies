@@ -1,7 +1,7 @@
 'use strict';
 /* Boot: SDK init, settings, art warm-up with progress bar, global input & lifecycle handlers. */
 
-const VERSION = '3.4.4';
+const VERSION = '3.5.0';
 const SETTINGS_KEY = 'orbling_galaxy_settings_v1';
 
 const Main = {

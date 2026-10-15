@@ -57,6 +57,7 @@ function sigilSvg() {
 
 const IntroScene = {
   async enter(p) {
+    this.epoch = (this.epoch || 0) + 1;
     const root = UI.scene;
     root.className = 'intro altar';
     this.timers = []; this.state = 'intro'; this.chosen = null; this.sel = null; this.card = null; this.battling = false;
@@ -111,10 +112,18 @@ const IntroScene = {
     window.removeEventListener('keydown', this._gs, true);
     for (const tm of this.timers) clearTimeout(tm);
     this.timers = [];
-    this.state = 'gone';
+    this.state = 'gone'; this.epoch++;
+    for (const finish of this.waits || []) finish();
+    this.waits = new Set();
   },
   alive() { return UI.cur === this && this.state !== 'gone'; },
-  wait(ms) { return new Promise(r => this.timers.push(setTimeout(r, ms))); },
+  wait(ms) {
+    if (!this.waits) this.waits = new Set();
+    return new Promise(resolve => {
+      const finish = () => { clearTimeout(timer); this.waits.delete(finish); resolve(this.alive()); };
+      const timer = setTimeout(finish, ms); this.waits.add(finish);
+    });
+  },
 
   /* ---------------- layout ---------------- */
   /** where starter i stands: an arc round the altar in landscape; portrait: a 2×2 grid under the thumb */
@@ -142,9 +151,9 @@ const IntroScene = {
   /** 3.4: no dialogue to sit through — while the camera comes down from the stars, Pip says one line in a bubble and
    *  the four star orbs burst open at once, so the choice is there ~1.5 s after the Altar appears */
   async seq() {
-    await this.wait(150); if (!this.alive()) return;
+    if (!await this.wait(150)) return;
     this.world.classList.add('settle'); // the camera comes down from the stars to the altar
-    await this.wait(250); if (!this.alive() || this.state !== 'intro') return; // a tap on a star opens them at once
+    if (!await this.wait(250)) return; if (!this.alive() || this.state !== 'intro') return; // a tap on a star opens them at once
     this.pipSay(t('al.d1'), 4600);
     await this.open(false);
   },
@@ -154,7 +163,7 @@ const IntroScene = {
     this.world.classList.add('settle', 'woke');
     for (let i = 0; i < this.pads.length; i++) {
       const P = this.pads[i];
-      if (!instant) { await this.wait(i ? 230 : 100); if (!this.alive() || this.state !== 'intro') return; }
+      if (!instant) { if (!await this.wait(i ? 230 : 100)) return; if (!this.alive() || this.state !== 'intro') return; }
       P.el.classList.add('open');
       if (instant) continue;
       Snd.play('shard'); Snd.cry(P.id);
@@ -162,7 +171,7 @@ const IntroScene = {
       if (VFX.ok()) { VFX.summon(x, y - 34, { cols, dust: '#3a6a70' }); VFX.stars(x, y - 110, 10, cols, { spd: [120, 300] }); }
       else UI.burst(x, y - 90, [EL_GLOW[sp.el], '#ffffff'], 12, 90);
     }
-    if (!instant) { await this.wait(320); if (!this.alive() || this.state !== 'intro') return; }
+    if (!instant) { if (!await this.wait(320)) return; if (!this.alive() || this.state !== 'intro') return; }
     this.state = 'choose';
     UI.scene.classList.add('choosing');
     Platform.gameplayStart();
@@ -211,10 +220,11 @@ const IntroScene = {
   async choose(id) {
     if (this.state !== 'choose' || this.chosen) return;
     this.chosen = id; this.state = 'chosen';
-    try { await this.celebrate(id); } catch (e) { console.error(e); this.toBattle(id); } // a hiccup never blocks the first battle
+    try { await this.celebrate(id); } catch (e) { console.error(e); if (this.alive()) this.toBattle(id); } // a hiccup never blocks the first battle
   },
   /** the partner joins (beam, leap, banner), the others go back to the sky, a star falls — then the battle */
   async celebrate(id) {
+    const epoch = this.epoch;
     if (this.card) { this.card.remove(); this.card = null; }
     UI.scene.classList.add('chosen');
     const sp = SPECIES[id], i = STARTERS.indexOf(id), P = this.pads[i];
@@ -226,17 +236,17 @@ const IntroScene = {
     P.el.classList.add('picked');
     if (VFX.ok()) { VFX.summon(x0, y0 - 30, { cols: VFX.PAL[VFX.EL[sp.el]] || VFX.PAL.star, big: true }); VFX.stars(x0, y0 - 120, 18, ['#fff6a0', '#ffffff', EL_GLOW[sp.el]], { spd: [160, 380] }); }
     const mon = P.el.querySelector('.al-mon'), dx = tx - x0, dy = ty - y0;
-    await this.wait(260);
+    if (!await this.wait(260)) return;
     U.anim(mon, [{ transform: 'translate(0, 0)' }, { transform: `translate(${dx * 0.5}px, ${dy * 0.5 - 170}px) rotate(${dx < 0 ? -14 : 14}deg) scale(1.08)`, offset: 0.5 }, { transform: `translate(${dx}px, ${dy}px)` }], { duration: 720, easing: 'cubic-bezier(.3,.6,.5,1)', fill: 'forwards' });
     // the others turn into light and fly back up to the stars
-    this.pads.forEach((q, k) => { if (q !== P) setTimeout(() => this.toSky(q, k), 120 + k * 110); });
-    await this.wait(760); if (!this.alive()) return;
+    this.pads.forEach((q, k) => { if (q !== P) this.timers.push(setTimeout(() => this.toSky(q, k), 120 + k * 110)); });
+    if (!await this.wait(760)) return;
     if (VFX.ok()) { VFX.smoke(tx, ty - 4, 8, '#3a6a70', { rx: 50 }); VFX.ring(tx, ty - 4, '#ffffff', 16, 120, 420, 5, { flat: 0.3 }); }
     this.banner(t('al.joined', { name: sp.name }));
     Snd.play('win');
-    await this.wait(1250); if (!this.alive()) return;
+    if (!await this.wait(1250)) return;
     await this.meteor(id);
-    this.toBattle(id);
+    if (this.alive() && this.epoch === epoch) this.toBattle(id);
   },
   /** the first battle: the catch lesson against the Orbling from the crater, on the Altar's night backdrop */
   toBattle(starter) {
@@ -288,7 +298,7 @@ const IntroScene = {
     const m = U.el('i', { class: 'al-meteor' });
     m.style.left = cx + 'px'; m.style.top = cy + 'px';
     this.world.appendChild(m);
-    await this.wait(620); if (!this.alive()) return;
+    if (!await this.wait(620)) return;
     m.remove();
     Snd.play('boom');
     FX.shake(12, 420);
@@ -301,13 +311,13 @@ const IntroScene = {
     const crater = U.el('i', { class: 'al-crater' });
     crater.style.left = cx + 'px'; crater.style.top = cy + 'px';
     this.world.appendChild(crater);
-    await this.wait(420); if (!this.alive()) return;
+    if (!await this.wait(420)) return;
     // the wild one hops out of the smoke, sees you — "!"
     const w = U.el('div', { class: 'al-wild' }, U.img(MonArt.url(sp), ''), U.el('b', { class: 'emote red', text: '!' }));
     w.style.left = cx + 'px'; w.style.top = cy + 'px'; w.style.setProperty('--sz', SPECIES[sp].size);
     this.world.appendChild(w);
     Snd.cry(sp); Snd.play('notice');
-    await this.wait(900);
+    if (!await this.wait(900)) return;
   },
 
   /** the Tamer look & name editor (Trainer Card → "Change look"); resolves with { look, name } or null */

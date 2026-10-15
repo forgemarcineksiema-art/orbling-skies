@@ -153,6 +153,7 @@ L({
   'tm.rematch': ['{name} wants a rematch! Battle again?', '{name} chce rewanżu! Walczymy ponownie?'],
   'tm.empty': ['Empty slot', 'Wolne miejsce'], 'tm.storage': ['Storage', 'Przechowalnia'],
   'tm.nobox': ['Caught Orblings go here when your team of 3 is full.', 'Tu trafiają złapane Orblingi, gdy drużyna (3) jest pełna.'],
+  'ui.scene_error': ['This screen could not be opened. Continue to return to the game.', 'Nie udało się otworzyć tego ekranu. Naciśnij Kontynuuj, aby wrócić do gry.'],
   'ui.back': ['Back', 'Wstecz'],
   'od.stats': ['Stats', 'Statystyki'],
   'od.evo': ['Evolution', 'Ewolucja'],
