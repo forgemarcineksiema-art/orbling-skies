@@ -1,6 +1,12 @@
 'use strict';
 /* Türkçe (tr) — translated from English. Missing keys fall back to English; merge new ones with tools/i18n.js. */
 LX('tr', {
+  "ux.map": "Harita",
+  "ux.menu": "Menü",
+  "ux.route": "Buraya git",
+  "ux.remaining": "Yenilecek eğitmenler",
+  "ux.compare": "Karşılaştır",
+  "ux.owned": "Koleksiyonda ×{n}",
   "ui.scene_error": "Bu ekran açılamadı. Oyuna dönmek için Devam et düğmesine bas.",
   "ui.save_failed": "İlerleme kaydedilemedi. Bu sayfayı açık tut ve tarayıcı depolamasında yer aç.",
   "ti.save_bad": "Kayıt yüklenemedi. Kayıt korundu; yeni bir oyun başlatmak onun yerine geçer.",

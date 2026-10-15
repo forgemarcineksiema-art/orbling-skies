@@ -1,0 +1,123 @@
+[
+  {
+    "wait": 5000
+  },
+  {
+    "eval": "(async()=>{eval(await(await fetch('/tools/audit.js')).text());await Audit.setup();setLang('pl');Game.s.sigils=[];Game.s.visited=['clover'];Game.s.beaten={t_tim:1,t_lily:1};Game.s.quests.main=MAIN_QUESTS.findIndex(q=>q.id==='q4');Game.release(Game.s.team[2]);Game.addMon(Game.makeMon('breezle',6));Game.s.loc.x=1130;await UI.go(ExploreScene,{zone:'clover'});await U.sleep(1500);UI.closeAll(true);return {targets:Quests.tamerTargets(Quests.main()),base:Base.open(),version:VERSION};})()",
+    "print": true,
+    "shot": "world"
+  },
+  {
+    "eval": "(()=>{if(UI.pill){const r=document.querySelector('.mobile-nav').getBoundingClientRect();if(r.left<70&&r.top<78)throw Error('Poki corner covered');}for(const e of document.querySelectorAll('.mobile-nav button')){const r=e.getBoundingClientRect();if(r.width<44||r.height<44)throw Error('Small navigation touch target');}return 'navigation-touch-ok';})()",
+    "print": true
+  },
+  {
+    "eval": "(()=>{const e=document.querySelector('.hb-goal');const r=e.getBoundingClientRect();const top=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);if(!e.contains(top))throw Error('Objective text is not tappable');return [r.x+r.width/2,r.y+r.height/2];})()",
+    "click": true,
+    "wait": 400,
+    "shot": "guide"
+  },
+  {
+    "eval": "(()=>{const rows=[...document.querySelectorAll('.guide-row')];if(rows.length!==4||rows.filter(r=>r.querySelector('button')).length!==2)throw Error('Wrong trainer checklist');rows.find(r=>r.textContent.includes('Owen')).querySelector('button').click();})()",
+    "wait": 3000
+  },
+  {
+    "eval": "if(ExploreScene.zone.id!=='whisper')throw Error('Route failed');'route-ok'",
+    "print": true
+  },
+  {
+    "eval": "(async()=>{await UI.go(ExploreScene,{zone:'clover'});await U.sleep(1200);UI.closeAll(true);ExploreScene.player.x=1130;ExploreScene.player.y=570;})()",
+    "wait": 1000
+  },
+  {
+    "eval": "(()=>{const e=document.querySelector('.exit-arrow.r');const r=e.getBoundingClientRect();const top=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);if(!e.contains(top))throw Error('Exit is covered');return [r.x+r.width/2,r.y+r.height/2];})()",
+    "click": true,
+    "wait": 3000
+  },
+  {
+    "eval": "if(ExploreScene.zone.id!=='whisper')throw Error('Touch exit failed');'exit-ok'",
+    "print": true
+  },
+  {
+    "eval": "document.querySelector('.mobile-nav-base').click()",
+    "wait": 3000
+  },
+  {
+    "eval": "if(!ExploreScene.home)throw Error('Base button failed');'base-ok'",
+    "print": true,
+    "shot": "base"
+  },
+  {
+    "eval": "UI.closeAll(true);Menus.team()",
+    "wait": 600,
+    "shot": "team"
+  },
+  {
+    "eval": "(()=>{const shelf=document.querySelector('.tv-box').getBoundingClientRect();if(shelf.top>=innerHeight-100)throw Error('Storage hidden below huge party');const cards=[...document.querySelectorAll('.tv-slot')].map(e=>e.getBoundingClientRect());if(cards.some(r=>r.left<0||r.right>innerWidth+1))throw Error('Party overflow');return {storageTop:shelf.top,viewport:innerHeight};})()",
+    "print": true
+  },
+  {
+    "eval": "Menus.compareCopies(Game.team().find(m=>m.sp==='breezle'))",
+    "wait": 400,
+    "shot": "compare"
+  },
+  {
+    "eval": "if(document.querySelectorAll('.copy-card').length!==2)throw Error('Duplicate comparison failed');UI.closeAll(true);Menus.navigation();",
+    "wait": 400,
+    "shot": "menu"
+  },
+  {
+    "resize": [
+      360,
+      640
+    ]
+  },
+  {
+    "eval": "UI.closeAll(true);Menus.team();",
+    "wait": 400,
+    "shot": "team-small"
+  },
+  {
+    "resize": [
+      844,
+      390
+    ]
+  },
+  {
+    "eval": "UI.closeAll(true);Menus.team();",
+    "wait": 400,
+    "shot": "team-landscape"
+  },
+  {
+    "resize": [
+      390,
+      844
+    ]
+  },
+  {
+    "eval": "(async()=>{UI.closeAll(true);for(const lang of ['en','pl','de','es','fr','it','pt','tr','ru']){setLang(lang);UI.hudBuild();Menus.navigation();await U.sleep(30);const e=document.querySelector('.nav-menu');if(e.scrollWidth>e.clientWidth+2)throw Error('Menu overflow '+lang);UI.closeAll(true);Menus.questGuide({type:'tamers',isle:'sunny'});await U.sleep(30);const g=document.querySelector('.quest-guide');if(g.scrollWidth>g.clientWidth+2)throw Error('Guide overflow '+lang);UI.closeAll(true);}setLang('pl');return '9 languages fit';})()",
+    "print": true
+  },
+  {
+    "eval": "UI.closeAll(true);Menus.caughtCard(Game.team().find(m=>m.sp==='breezle'),false,'team',0);'show duplicate'",
+    "wait": 800,
+    "shot": "duplicate"
+  },
+  {
+    "eval": "(()=>{const b=document.querySelector('.rv-row button');const r=b.getBoundingClientRect();if(r.bottom>innerHeight||r.top<0)throw Error('Catch confirmation outside screen');b.click();return 'duplicate-confirmation-ok';})()",
+    "print": true
+  },
+  {
+    "eval": "(async()=>{await UI.go(GalaxyScene,{});await U.sleep(1200);return {map: UI.cur===GalaxyScene};})()",
+    "print": true,
+    "shot": "map"
+  },
+  {
+    "eval": "document.querySelector('.mobile-nav-base').click()",
+    "wait": 2200
+  },
+  {
+    "eval": "if(!ExploreScene.home)throw Error('Map base navigation failed');'map-base-ok'",
+    "print": true
+  }
+]

@@ -48,6 +48,39 @@ const Menus = {
     h = UI.sheet({ title: t('pf.title'), body, cls: 'pf-sheet' });
   },
 
+  navigation() {
+    const body = U.el('div', { class: 'nav-menu' });
+    let h;
+    const un = UI.hudUnlocks();
+    const add = (label, fn) => body.appendChild(U.el('button', { class: 'btn white', text: label, onclick: () => { h.close(true); fn(); } }));
+    add(t('pf.title'), () => this.profile());
+    add(t('hud.quests'), () => this.quests());
+    if (un.bag) add(t('hud.bag'), () => this.bag());
+    if (un.codex) add(t('hud.codex'), () => this.codex());
+    if (un.shop) add(t('hud.shop'), () => this.shop());
+    if (un.wheel) add(t('day.title'), () => this.today().then(r => { if (r === 'home') ExploreScene.goHome(); }));
+    add(t('hud.settings'), () => this.settings());
+    h = UI.sheet({ title: t('ux.menu'), body, cls: 'nav-sheet' });
+  },
+  questGuide(q) {
+    const targets = Quests.tamerTargets(q);
+    if (!targets.length) { this.quests(); return; }
+    const body = U.el('div', { class: 'quest-guide' }, U.el('p', { text: Quests.text(q) }));
+    for (const target of targets) {
+      const { id, zone, beaten } = target;
+      const row = U.el('div', { class: 'guide-row' }, U.el('div', {}, U.el('b', { text: (beaten ? '✓ ' : '') + UI.whoName(id) }), U.el('small', { text: t('zone.' + zone) })));
+      if (!beaten) row.appendChild(U.el('button', { class: 'btn blue', text: t('ux.route'), onclick: () => {
+        if (UI.busyGo || (UI.cur === ExploreScene && ExploreScene.busy)) return;
+        if (!Game.isleUnlocked(ZONES[zone].isle)) return;
+        UI.closeAll(true);
+        if (UI.cur === ExploreScene && ExploreScene.zone.id === zone) ExploreScene.goTalk(id);
+        else { if (UI.cur === ExploreScene && !ExploreScene.home) ExploreScene.saveState(); UI.go(ExploreScene, { zone }); }
+      } }));
+      body.appendChild(row);
+    }
+    UI.sheet({ title: t('ux.remaining'), body, cls: 'guide-sheet' });
+  },
+
   /* ---------------- team & storage ---------------- */
   /** a stage: the leader in the middle on the high pedestal (it fights first), the other two on either side, all of
    *  them big; below it the storage shelf of Orbling tiles */
@@ -62,7 +95,7 @@ const Menus = {
       const sorted = box.slice().sort((a, b) => this.boxSort === 'new' ? b.t - a.t : this.boxSort === 'sign' ? SIGN[SPECIES[a.sp].sign].idx - SIGN[SPECIES[b.sp].sign].idx || b.lv - a.lv : b.lv - a.lv);
       order = [...Game.s.team, ...sorted.map(x => x.id)];
       const stage = U.el('div', { class: 'tv-stage' });
-      for (const i of [1, 0, 2]) stage.appendChild(this.teamSlot(team[i], i, draw, orderNow));
+      for (const i of [0, 1, 2]) stage.appendChild(this.teamSlot(team[i], i, draw, orderNow));
       const sorts = U.el('div', { class: 'seg' });
       for (const k of ['lv', 'new', 'sign']) sorts.appendChild(U.el('button', { class: 'snd' + (this.boxSort === k ? ' on' : ''), onclick: () => { this.boxSort = k; draw(); } }, t('tm.sort_' + k)));
       const shelf = U.el('div', { class: 'tv-shelf' });
@@ -83,7 +116,8 @@ const Menus = {
         i === 0 ? U.el('span', { class: 'tv-lead', text: t('tm.leader') }) : null),
       U.el('b', { class: 'tv-name', text: sp.name + (m.shiny ? ' ✦' : '') }),
       U.el('div', { class: 'tv-meta' }, U.el('span', { html: signIcon(sp.sign, 26) + elIcon(sp.el, 26) }), U.el('em', { text: t('ui.lv') + ' ' + m.lv })),
-      U.el('div', { class: 'tv-hp' }, UI.bar(fr, UI.hpClass(fr)), U.el('small', { text: m.hp + '/' + mx })));
+      U.el('div', { class: 'tv-hp' }, UI.bar(fr, UI.hpClass(fr)), U.el('small', { text: m.hp + '/' + mx })),
+      Game.canEvolve(m) ? U.el('small', { class: 'tv-evolve', text: t('md.evolve') + ' ↑' }) : null);
   },
   /** display scale of an Orbling's big picture: evolved stages stand taller, but only a little, so every stage fits the
    *  same frame (species size runs 0.8 … 1.16 → 0.84 … 1) */
@@ -167,11 +201,26 @@ const Menus = {
       if (inTeam && !lead) acts.appendChild(U.el('button', { class: 'btn white', html: WArt.icon('crown', 22) + ' ' + t('md.leader'), onclick: () => { Game.setLeader(m.id); refresh(); } }));
       if (inTeam) acts.appendChild(U.el('button', { class: 'btn blue' + (Game.s.team.length <= 1 ? ' off' : ''), text: t('md.tobox'), onclick: () => { if (Game.toBox(m.id)) { refresh(); h.close(); } } }));
       else acts.appendChild(U.el('button', { class: 'btn green', text: t('md.toteam'), onclick: () => this.toTeam(m, () => { refresh(); h.close(); }) }));
+      const copies = Game.allMons().filter(x => x.sp === m.sp);
+      if (copies.length > 1) acts.appendChild(U.el('button', { class: 'btn blue', text: t('ux.compare') + ' (' + copies.length + ')', onclick: () => this.compareCopies(m) }));
       body.append(hero, U.el('div', { class: 'od-side' }, U.el('div', { class: 'od-card' }, tabs, status, page), acts));
     };
     draw();
     window.addEventListener('keydown', keys);
     h = UI.sheet({ title: '', body, bar: nav, cls: 'od-sheet', onClose: () => { window.removeEventListener('keydown', keys); Game.save(); UI.checkQuests(); } });
+  },
+  compareCopies(selected) {
+    const copies = Game.allMons().filter(m => m.sp === selected.sp);
+    const body = U.el('div', { class: 'copy-compare' });
+    for (const m of copies) {
+      const stats = Game.stats(m);
+      const card = U.el('div', { class: 'copy-card' + (m.id === selected.id ? ' selected' : '') },
+        U.el('b', { text: (m.id === selected.id ? '✓ ' : '') + SPECIES[m.sp].name + ' · ' + t('ui.lv') + ' ' + m.lv }),
+        U.el('small', { text: t(Game.s.team.includes(m.id) ? 'hud.team' : 'tm.storage') }));
+      for (const key of ['hp', 'atk', 'mag', 'def', 'spd']) card.appendChild(U.el('span', { text: t(key === 'hp' ? 'ui.hp' : 'stat.' + key) + ': ' + stats[key] }));
+      body.appendChild(card);
+    }
+    UI.sheet({ title: t('ux.compare'), body, cls: 'compare-sheet' });
   },
   /** stats tab: the five stats as a star chart, the sign's trait, potential (with the stardust boost), friendship */
   odStats(page, m, st, refresh) {
@@ -448,6 +497,7 @@ const Menus = {
       const [c, n] = Quests.progress(mq), hint = Quests.hintIsle(mq);
       bubble = U.el('div', { class: 'qv-bub' }, U.el('small', { text: t('q.main') + ' · ' + (Game.s.quests.main + 1) + ' / ' + MAIN_QUESTS.length }), U.el('b', { text: Quests.text(mq) }), prog(c, n),
         hint ? U.el('span', { class: 'qv-hint', html: WArt.icon('map', 18) + ' ' + t('q.where', { isle: t('isle.' + hint) }) }) : null,
+        Quests.tamerTargets(mq).some(x => !x.beaten) ? U.el('button', { class: 'btn blue', text: t('ux.route'), onclick: () => this.questGuide(mq) }) : null,
         U.el('div', { class: 'qv-rw' }, rw(mq.reward)));
     } else bubble = U.el('div', { class: 'qv-bub' }, U.el('b', { text: t('q.alldone') }));
     const hero = U.el('div', { class: 'qv-hero' }, U.el('div', { class: 'qv-pip' }, U.img(WArt.pip(mq ? '' : 'wow'))), bubble);
@@ -761,6 +811,8 @@ const Menus = {
       r.fig.appendChild(this.revealArt(m.sp, m.shiny, 'pop'));
       this.revealInfo(r.info, m, [t(where === 'team' ? 'cap.team' : 'cap.box'),
         dust ? `<img src="${WArt.item('dust')}" width="28" alt=""> ` + t('cap.dust', { n: dust, sign: t('sign.' + SPECIES[m.sp].sign) }) : null]);
+      const count = Game.allMons().filter(x => x.sp === m.sp).length;
+      if (count > 1) r.info.appendChild(U.el('small', { class: 'collection-count', text: t('ux.owned', { n: count }) }));
       if (spoils) r.row.appendChild(UI.pills(spoils)); // (beside OK: the page stays as tall as before)
       r.row.appendChild(U.el('button', { class: 'btn green', text: t('ui.ok'), onclick: () => r.h.close(true) }));
       UI.burst(...this.revealMid(), ['#ffe066', '#ffffff', '#8fd8ff', '#ff8fd0'], 30, 240);

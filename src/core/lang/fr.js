@@ -1,6 +1,12 @@
 'use strict';
 /* Français (fr) — translated from English. Missing keys fall back to English; merge new ones with tools/i18n.js. */
 LX('fr', {
+  "ux.map": "Carte",
+  "ux.menu": "Menu",
+  "ux.route": "Y aller",
+  "ux.remaining": "Dresseurs à battre",
+  "ux.compare": "Comparer",
+  "ux.owned": "Collection ×{n}",
   "ui.scene_error": "Impossible d’ouvrir cet écran. Appuie sur Continuer pour revenir au jeu.",
   "ui.save_failed": "Impossible de sauvegarder la progression. Gardez cette page ouverte et libérez de l’espace dans le stockage du navigateur.",
   "ti.save_bad": "Impossible de charger votre sauvegarde. Elle a été conservée ; une nouvelle partie la remplacera.",

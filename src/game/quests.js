@@ -52,6 +52,12 @@ const Quests = {
     const key = 'q.' + q.type + (q.el ? '_el' : '');
     return t(key, p);
   },
+  /** Real roster + saved victories, shared by HUD hints and the route sheet. */
+  tamerTargets(q) {
+    if (!q || !['tamers', 'guardian'].includes(q.type)) return [];
+    const ids = q.type === 'tamers' ? isleTamers(q.isle) : [q.target];
+    return ids.map(id => ({ id, zone: Object.keys(ZONES).find(z => ZONES[z].npcs.some(n => n[0] === id)), beaten: Game.beaten(id) })).filter(x => x.zone);
+  },
   /** where the player should go for a quest (isle id, or 'arena') */
   hintIsle(q) {
     if (!q || q.type === 'visit' || q.type === 'tamers') return null; // the text names the isle already

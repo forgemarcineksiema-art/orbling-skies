@@ -1,6 +1,12 @@
 'use strict';
 /* Русский (ru) — translated from English. Missing keys fall back to English; merge new ones with tools/i18n.js. */
 LX('ru', {
+  "ux.map": "Карта",
+  "ux.menu": "Меню",
+  "ux.route": "Перейти",
+  "ux.remaining": "Победи тренеров",
+  "ux.compare": "Сравнить",
+  "ux.owned": "В коллекции ×{n}",
   "ui.scene_error": "Не удалось открыть этот экран. Нажми «Продолжить», чтобы вернуться в игру.",
   "ui.save_failed": "Не удалось сохранить прогресс. Не закрывайте эту страницу и освободите место в хранилище браузера.",
   "ti.save_bad": "Не удалось загрузить сохранение. Оно сохранено; новая игра заменит его.",

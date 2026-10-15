@@ -1,5 +1,13 @@
 # Historia zmian
 
+**Wersja 3.6.0 — nawigacja i czytelność na telefonie.** Strzałki przejścia są przyciskami
+z nazwą lokacji. Dotknięcie celu pokazuje listę trenerów i drogę do brakujących przeciwników.
+Baza jest dostępna po pierwszym złapaniu, bez pośrednictwa mapy. Cztery podpisane przyciski
+zastępują tłok ikon; drużyna i przechowalnia mieszczą się na małym ekranie. Duplikaty mają
+krótki licznik, a porównanie statystyk otwiera się na żądanie. Powiadomienia o nagrodach
+i medalach czekają na instrukcje, zmianę lokacji i inne powiadomienia. Uwzględniono miejsce
+na przycisk Poki. [Zakres i weryfikacja](docs/UX-3.6.0.md).
+
 **Wersja 3.5.0 — zarządzanie zasobami i odporność.** Cache sprite’ów i SVG usuwa stare zasoby,
 pełne animacje postaci powstają po wejściu w kadr, a świat pod pełnoekranowym menu jest wstrzymany.
 Zawieszone zadania graficzne mają limity czasu; przy braku sprawnego pracownika gra korzysta

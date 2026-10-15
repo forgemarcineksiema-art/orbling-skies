@@ -825,3 +825,47 @@
 .port .customize .cz-right > .row:last-child { position: sticky; bottom: 0; z-index: 2; margin: 0 -14px; padding: 12px 0 10px; background: var(--pn-bot, #e1eaf7); border-top: 2px solid var(--pn-line, #c9d6ea); box-shadow: 0 -8px 12px rgba(20,40,80,.08); }
 /* with Poki's pill a menu page's bar is narrower on a phone: a long title takes two lines instead of being cut */
 #game.pk-pill.port .sh-title { white-space: normal; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; font-size: 27px; line-height: 1.05; }
+
+/* 3.6 mobile management: compact party, readable storage and explicit actions. */
+.nav-menu, .quest-guide, .copy-compare { padding: 18px 24px; }
+.nav-menu { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; align-content: start; }
+.guide-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 0; border-bottom: 2px solid #adc5d7; }
+.guide-row b, .guide-row small { display: block; }
+.guide-row b { font-size: 25px; }
+.guide-row small { font-size: 21px; margin-top: 5px; }
+.guide-row .btn { flex: none; }
+.copy-card { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; padding: 16px; margin: 12px 0; background: #fff; border: 2px solid #acc6da; border-radius: 16px; font-size: 22px; }
+.copy-card.selected { border-color: #1681c6; }
+.copy-card b, .copy-card small { grid-column: 1 / -1; }
+#game:not(.port) .tv-slot.lead { order: 2; }
+#game:not(.port) .tv-slot:nth-child(2) { order: 1; }
+#game:not(.port) .tv-slot:nth-child(3) { order: 3; }
+.port .tv-stage { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); grid-template-areas: none; gap: 8px; padding: 0 0 22px; align-items: stretch; }
+.port .tv-slot, .port .tv-slot.lead, .port .tv-slot:nth-child(1), .port .tv-slot:nth-child(3) { grid-area: auto; width: 100%; margin: 0; gap: 7px; padding: 8px 4px 12px; background: rgba(255,255,255,.5); border: 2px solid #aec9de; border-radius: 16px; min-width: 0; }
+.port .tv-slot.lead { border-color: #d8951a; background: #fff5d4; }
+.port .tv-fig, .port .tv-slot.lead .tv-fig { height: 154px; animation: none; }
+.port .tv-art, .port .tv-slot.lead .tv-art { width: calc(135px * var(--sz,1)); bottom: 39px; }
+.port .tv-art.fly, .port .tv-slot.lead .tv-art.fly { bottom: 46px; }
+.port .tv-ped, .port .tv-slot.lead .tv-ped { width: 120px; height: 30px; bottom: 27px; }
+.port .tv-lead { bottom: 8px; font-size: 16px; padding: 3px 8px; }
+.port .tv-name, .port .tv-slot.lead .tv-name { font-size: 23px; max-width: 100%; overflow-wrap: anywhere; }
+.port .tv-meta { flex-wrap: wrap; justify-content: center; gap: 3px; }
+.port .tv-meta em { font-size: 21px; }
+.port .tv-hp, .port .tv-slot.lead .tv-hp { width: 100%; flex-direction: column; gap: 4px; }
+.port .tv-hp .bar { flex: none; width: 100%; height: 12px; }
+.port .tv-hp small { font-size: 20px; }
+.port .tv-box { padding: 12px; }
+.port .tv-head { position: static; flex-wrap: wrap; margin-bottom: 14px; gap: 12px; }
+.port .tv-head .seg { margin-left: 0; display: flex; width: 100%; }
+.port .tv-head .seg button { flex: 1; min-height: 50px; font-size: 21px; }
+.port .tv-shelf { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; justify-content: stretch; }
+.port .tv-shelf .mtile { width: 100%; min-width: 0; }
+.port .tv-none { grid-column: 1 / -1; }
+#game:not(.port) .tv-stage { padding-top: 24px; }
+#game:not(.port) .tv-slot.lead .tv-fig { height: 190px; }
+#game:not(.port) .tv-slot.lead .tv-art { width: calc(220px * var(--sz,1)); bottom: 76px; }
+.tv-evolve { background: #6b389c; color: #fff; border-radius: 8px; padding: 4px 10px; font: 800 18px var(--f-ui); }
+.guide-row > div { min-width: 0; flex: 1; overflow-wrap: anywhere; }
+.guide-row .btn { max-width: 45%; white-space: normal; }
+.nav-menu .btn { white-space: normal; overflow-wrap: anywhere; min-height: 72px; }
+.port .guide-row .btn, .port .tv-head .seg button { min-height: 72px; }
