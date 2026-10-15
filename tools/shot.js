@@ -42,7 +42,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 (async () => {
   fs.mkdirSync(out, { recursive: true });
   const prof = path.join(out, '.prof' + PORT);
-  const ch = spawn(CHROME, ['--headless=new', '--disable-gpu', '--hide-scrollbars', '--mute-audio', `--remote-debugging-port=${PORT}`, `--user-data-dir=${prof}`, `--window-size=${VW},${VH}`, 'about:blank'], { stdio: 'ignore' });
+  const ch = spawn(CHROME, [...(process.env.CHROME_FLAGS || '').split(' ').filter(Boolean), '--headless=new', '--disable-gpu', '--hide-scrollbars', '--mute-audio', `--remote-debugging-port=${PORT}`, `--user-data-dir=${prof}`, `--window-size=${VW},${VH}`, 'about:blank'], { stdio: 'ignore' });
   let list;
   for (let i = 0; i < 50 && !list; i++) { await sleep(200); try { list = await (await fetch(`http://127.0.0.1:${PORT}/json/list`)).json(); } catch (e) { /* not up yet */ } }
   const page = list.find(t => t.type === 'page');
@@ -55,11 +55,14 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   await send('Runtime.enable'); await send('Page.enable');
   await send('Emulation.setDeviceMetricsOverride', { width: VW, height: VH, deviceScaleFactor: DPR, mobile: MOBILE });
   if (MOBILE) await send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
+  if (process.env.INIT) await send('Page.addScriptToEvaluateOnNewDocument', { source: fs.readFileSync(process.env.INIT, 'utf8') });
+  if (process.env.CPU) await send('Emulation.setCPUThrottlingRate', { rate: +process.env.CPU });
   await send('Page.navigate', { url: URL0 });
   for (const st of steps) {
+    if (st.cdp) { const r = await send(st.cdp, st.params || {}); if (st.print) console.log('CDP', st.cdp, JSON.stringify(r)); }
     if (st.eval) {
       const r = await send('Runtime.evaluate', { expression: st.eval, awaitPromise: true, returnByValue: true });
-      if (r.result && r.result.exceptionDetails) console.log('eval error:', r.result.exceptionDetails.text, (r.result.exceptionDetails.exception || {}).description);
+      if (r.result && r.result.exceptionDetails) { process.exitCode = 1; console.log('eval error:', r.result.exceptionDetails.text, (r.result.exceptionDetails.exception || {}).description); }
       else if (st.print && r.result && r.result.result) console.log('=>', JSON.stringify(r.result.result.value));
       if (st.click === true && r.result && r.result.result && Array.isArray(r.result.result.value)) st.click = r.result.result.value;
     }

@@ -11,14 +11,15 @@ const context2d = { drawImage() {}, setTransform() {}, clearRect() {} };
 const canvas = () => ({ width: 300, height: 150, style: {}, isConnected: false,
   getContext: () => context2d, toDataURL: () => 'data:image/webp,',
   toBlob: fn => queueMicrotask(() => fn(new Blob(['paint']))) });
-const document = { hidden: false, createElement: canvas, getElementsByTagName: () => [] };
+const revoked = new Set(), liveImages = [];
+const document = { querySelectorAll: selector => selector === 'img[src]' ? liveImages : [], hidden: false, createElement: canvas, getElementsByTagName: () => [] };
 const fx = { prepend(c) { c.isConnected = true; }, classList: { contains: () => false } };
 const ctx = vm.createContext({ console, Blob, Map, Set, Math, Promise, queueMicrotask,
   document, navigator: { hardwareConcurrency: 2 }, window: { devicePixelRatio: 2 },
   UI: { fx, scale: 1, portrait: false }, PropArt: { PROP: {} },
   Scenery: { paint: () => ({ defs: '', body: '<rect width="1280" height="720"/>' }) },
-  URL: { createObjectURL: () => 'blob:' + ++next, revokeObjectURL() {} },
-  Image: class { set src(value) { queueMicrotask(() => this.onload()); } },
+  URL: { createObjectURL: () => 'blob:' + ++next, revokeObjectURL(u) { revoked.add(u); } },
+  Image: class { set src(value) { queueMicrotask(() => this.onload?.()); } },
   setTimeout: fn => { const id = ++next; timers.set(id, fn); return id; },
   clearTimeout: id => timers.delete(id),
   requestAnimationFrame: fn => { const id = ++next; frames.set(id, fn); return id; },
@@ -27,7 +28,7 @@ const ctx = vm.createContext({ console, Blob, Map, Set, Math, Promise, queueMicr
 for (const f of ['src/core/util.js', 'src/art/painter.js', 'src/art/world_art.js', 'src/art/vfx.js']) {
   vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), ctx, { filename: f });
 }
-const { Painter, WArt, VFX } = vm.runInContext('({Painter,WArt,VFX})', ctx);
+const { Painter, WArt, VFX, U } = vm.runInContext('({Painter,WArt,VFX,U})', ctx);
 (async () => {
   let generated = 0;
   const svg = () => { generated++; return '<svg/>'; };
@@ -56,6 +57,27 @@ const { Painter, WArt, VFX } = vm.runInContext('({Painter,WArt,VFX})', ctx);
   assert.notEqual(await Painter.bake('stale', svg, options), fallback, 'revisiting paints cancelled frames again');
 
 
+  const pinned = await Painter.bake('pinned', svg, options);
+  const visible = await Painter.bake('visible', svg, options, false);
+  liveImages.push({ src: visible });
+  for (let i = 0; i < 190; i++) await Painter.bake('evict:' + i, svg, { ...options, w: 512, h: 512 }, false);
+  Painter.trim();
+  assert.ok(Painter.stats().retainedBytes <= Painter.stats().budget);
+  assert.equal(revoked.has(pinned), false, 'active animation frames remain decodable');
+  assert.equal(revoked.has(visible), false, 'visible UI images remain decodable');
+  assert.equal(Painter.has('evict:0'), false, 'old inactive images are evicted');
+  Painter.beginScene(); liveImages.length = 0;
+  for (let i = 190; i < 250; i++) await Painter.bake('evict:' + i, svg, { ...options, w: 512, h: 512 }, false);
+  Painter.trim();
+  assert.ok(revoked.has(pinned), 'leaving a scene releases its frame lease');
+  assert.ok(revoked.has(visible), 'detached UI images can be reclaimed');
+  assert.ok(await Painter.bake('pinned', svg, options) !== pinned, 'an evicted frame regenerates');
+  const protectedSvg = U.svgUrl('protected', () => '<svg/>');
+  for (let i = 0; i < 300; i++) U.svgUrl('svg:' + i, () => '<svg/>');
+  const vectorStats = U.trimSvg(new Set([protectedSvg]));
+  assert.ok(vectorStats.entries <= 256);
+  assert.equal(revoked.has(protectedSvg), false);
+
   for (let i = 0; i < 12; i++) {
     const image = await WArt.bake('meadow', i);
     assert.equal(image.width, 2560);
@@ -68,6 +90,25 @@ const { Painter, WArt, VFX } = vm.runInContext('({Painter,WArt,VFX})', ctx);
   assert.equal(master.width, 2560, 'eviction must not damage a canvas retained by a caller');
   const copy = WArt.bgImg('meadow', 15, 'ex-back');
   assert.equal(copy.width, 640, 'blurred filler uses a smaller backing store');
+
+  const RealImage = ctx.Image;
+  ctx.Image = class { set src(value) {} };
+  const beforeTimers = new Set(timers.keys());
+  const stalledImage = U.loadImage('blob:stalled', 20);
+  const rejectedImage = assert.rejects(stalledImage, /timed out/);
+  assert.ok(U.visibleArtUrls().has('blob:stalled'));
+  for (const [id, fn] of timers) if (!beforeTimers.has(id)) { timers.delete(id); fn(); }
+  await rejectedImage;
+  assert.equal(U.visibleArtUrls().has('blob:stalled'), false, 'failed decode releases its temporary lease');
+  ctx.Image = RealImage;
+  ctx.window.removeEventListener = () => {};
+  vm.runInContext(fs.readFileSync(path.join(root, 'src/scenes/intro.js'), 'utf8'), ctx);
+  const intro = vm.runInContext('IntroScene', ctx);
+  ctx.UI.cur = intro; intro.state = 'intro'; intro.timers = [];
+  const cancelledWait = intro.wait(100000);
+  intro.exit(); intro.state = 'intro'; // same singleton can be entered again before a continuation resumes
+  assert.equal(await cancelledWait, false, 'leaving the introduction resolves and cancels its waits');
+  assert.equal(intro.waits.size, 0);
 
   VFX.emit(10000, { x: 100, y: 100 });
   assert.equal(VFX.stats().p, 1200, 'particle bursts have a hard budget');

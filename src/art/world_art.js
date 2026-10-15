@@ -93,17 +93,14 @@ const WArt = (() => {
     const p = new Promise(res => {
       const done = m => { remember(key, m); baking.delete(key); res(m); };
       if (typeof Image === 'undefined' || typeof document === 'undefined') return done(null);
-      const im = new Image();
-      im.onload = () => {
+      U.loadImage(bg(biome, seed, tod)).then(im => {
         try {
           const c = document.createElement('canvas');
           c.width = Math.round(1280 * k); c.height = Math.round(720 * k);
           c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
           done(c);
         } catch (e) { done(null); }
-      };
-      im.onerror = () => done(null);
-      im.src = bg(biome, seed, tod);
+      }, () => done(null));
     });
     if (!baked.has(key)) baking.set(key, p);
     return p;

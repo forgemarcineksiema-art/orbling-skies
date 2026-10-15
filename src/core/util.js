@@ -155,14 +155,55 @@ const U = {
 
   /* ---------- SVG → cached object URL ---------- */
   _svgCache: new Map(),
+  _svgSizes: new Map(),
+  _artLoads: new Map(),
+  /** A decode cannot hold up loading forever. Pin temporary images until their load settles. */
+  loadImage(src, timeout = 8000) {
+    return new Promise((resolve, reject) => {
+      const im = new Image(); let settled = false;
+      U._artLoads.set(src, (U._artLoads.get(src) || 0) + 1);
+      const finish = (ok) => {
+        if (settled) return; settled = true; clearTimeout(timer);
+        im.onload = im.onerror = null;
+        const n = U._artLoads.get(src) - 1;
+        if (n) U._artLoads.set(src, n); else U._artLoads.delete(src);
+        if (ok) resolve(im); else { im.src = ''; reject(new Error('image load failed or timed out')); }
+      };
+      const timer = setTimeout(() => finish(false), timeout);
+      im.onload = () => finish(true); im.onerror = () => finish(false); im.src = src;
+    });
+  },
+  /** URLs still referenced by live DOM, including persistent CSS custom properties on <html>. */
+  visibleArtUrls() {
+    const keep = new Set(U._artLoads.keys());
+    if (typeof document === 'undefined' || !document.querySelectorAll) return keep;
+    for (const im of document.querySelectorAll('img[src]')) keep.add(im.src);
+    for (const el of document.querySelectorAll('[style]')) {
+      for (const match of (el.getAttribute('style') || '').matchAll(/blob:[^\s"')]+/g)) keep.add(match[0]);
+    }
+    return keep;
+  },
+  trimSvg(keep = new Set()) {
+    let bytes = [...U._svgSizes.values()].reduce((n, v) => n + v, 0);
+    for (const [key, url] of U._svgCache) {
+      if (bytes <= 8 * 1024 * 1024 && U._svgCache.size <= 256) break;
+      if (keep.has(url)) continue;
+      bytes -= U._svgSizes.get(key) || 0;
+      U._svgCache.delete(key); U._svgSizes.delete(key);
+      if (url.startsWith('blob:')) URL.revokeObjectURL(url);
+    }
+    return { entries: U._svgCache.size, bytes, budget: 8 * 1024 * 1024 };
+  },
   svgUrl(key, gen) {
     let u = U._svgCache.get(key);
     if (!u) {
       const svg = gen();
-      try { u = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' })); }
+      const blob = new Blob([svg], { type: 'image/svg+xml' });
+      U._svgSizes.set(key, blob.size);
+      try { u = URL.createObjectURL(blob); }
       catch (e) { u = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg); }
       U._svgCache.set(key, u);
-    }
+    } else { U._svgCache.delete(key); U._svgCache.set(key, u); }
     return u;
   },
 };

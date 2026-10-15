@@ -1,0 +1,96 @@
+[
+  {
+    "wait": 6000
+  },
+  {
+    "eval": "(async()=>{eval(await(await fetch('/tools/audit.js')).text());await Audit.setup();Main.settings.lite=false;Main.setLite(false);return VERSION;})()",
+    "print": true
+  },
+  {
+    "eval": "(async()=>{await UI.go(ExploreScene,{zone:'clover'});UI.closeAll(true);await U.sleep(500);})()"
+  },
+  {
+    "eval": "(async()=>{await UI.go(ExploreScene,{zone:'shore'});UI.closeAll(true);await U.sleep(500);})()"
+  },
+  {
+    "eval": "(async()=>{await UI.go(ExploreScene,{zone:'ashen'});UI.closeAll(true);await U.sleep(500);})()"
+  },
+  {
+    "eval": "(async()=>{await UI.go(ExploreScene,{zone:'drift'});UI.closeAll(true);await U.sleep(500);})()"
+  },
+  {
+    "eval": "(async()=>{await UI.go(ExploreScene,{zone:'plains'});UI.closeAll(true);await U.sleep(500);})()"
+  },
+  {
+    "eval": "(async()=>{await UI.go(ExploreScene,{zone:'grove'});UI.closeAll(true);await U.sleep(500);})()"
+  },
+  {
+    "eval": "(async()=>{for(let i=0;i<12;i++)await WArt.painted({...Game.s.look,top:U.rgbToHex(50+i*12,80+0*40,130)},{});const end=performance.now()+15000;while(Painter.busy()&&performance.now()<end)await U.sleep(100);})()"
+  },
+  {
+    "cdp": "HeapProfiler.collectGarbage"
+  },
+  {
+    "eval": "({round:1,...__resources(),painter:Painter.stats(),backdrops:WArt.stats(),dom:document.querySelectorAll('*').length,errors:__errors})",
+    "print": true
+  },
+  {
+    "eval": "(async()=>{await UI.go(ExploreScene,{zone:'clover'});UI.closeAll(true);await U.sleep(500);})()"
+  },
+  {
+    "eval": "(async()=>{await UI.go(ExploreScene,{zone:'shore'});UI.closeAll(true);await U.sleep(500);})()"
+  },
+  {
+    "eval": "(async()=>{await UI.go(ExploreScene,{zone:'ashen'});UI.closeAll(true);await U.sleep(500);})()"
+  },
+  {
+    "eval": "(async()=>{await UI.go(ExploreScene,{zone:'drift'});UI.closeAll(true);await U.sleep(500);})()"
+  },
+  {
+    "eval": "(async()=>{await UI.go(ExploreScene,{zone:'plains'});UI.closeAll(true);await U.sleep(500);})()"
+  },
+  {
+    "eval": "(async()=>{await UI.go(ExploreScene,{zone:'grove'});UI.closeAll(true);await U.sleep(500);})()"
+  },
+  {
+    "eval": "(async()=>{for(let i=0;i<12;i++)await WArt.painted({...Game.s.look,top:U.rgbToHex(50+i*12,80+1*40,130)},{});const end=performance.now()+15000;while(Painter.busy()&&performance.now()<end)await U.sleep(100);})()"
+  },
+  {
+    "cdp": "HeapProfiler.collectGarbage"
+  },
+  {
+    "eval": "({round:2,...__resources(),painter:Painter.stats(),backdrops:WArt.stats(),dom:document.querySelectorAll('*').length,errors:__errors})",
+    "print": true
+  },
+  {
+    "eval": "(async()=>{await UI.go(ExploreScene,{zone:'clover'});UI.closeAll(true);await U.sleep(500);})()"
+  },
+  {
+    "eval": "(async()=>{await UI.go(ExploreScene,{zone:'shore'});UI.closeAll(true);await U.sleep(500);})()"
+  },
+  {
+    "eval": "(async()=>{await UI.go(ExploreScene,{zone:'ashen'});UI.closeAll(true);await U.sleep(500);})()"
+  },
+  {
+    "eval": "(async()=>{await UI.go(ExploreScene,{zone:'drift'});UI.closeAll(true);await U.sleep(500);})()"
+  },
+  {
+    "eval": "(async()=>{await UI.go(ExploreScene,{zone:'plains'});UI.closeAll(true);await U.sleep(500);})()"
+  },
+  {
+    "eval": "(async()=>{await UI.go(ExploreScene,{zone:'grove'});UI.closeAll(true);await U.sleep(500);})()"
+  },
+  {
+    "eval": "(async()=>{for(let i=0;i<12;i++)await WArt.painted({...Game.s.look,top:U.rgbToHex(50+i*12,80+2*40,130)},{});const end=performance.now()+15000;while(Painter.busy()&&performance.now()<end)await U.sleep(100);})()"
+  },
+  {
+    "cdp": "HeapProfiler.collectGarbage"
+  },
+  {
+    "eval": "({round:3,...__resources(),painter:Painter.stats(),backdrops:WArt.stats(),dom:document.querySelectorAll('*').length,errors:__errors})",
+    "print": true
+  },
+  {
+    "shot": "soak"
+  }
+]

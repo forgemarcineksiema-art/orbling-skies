@@ -149,7 +149,7 @@ const ExploreScene = {
     for (const e of this.ents) this.place(e, true);
     if (this.pending) { await Promise.race([Promise.all(this.pending), U.sleep(2200)]); this.pending = null; }
     // loadSprites prepares visible inhabitants; unseen zones no longer queue full animation sets.
-    setTimeout(() => this.afterEnter(p, firstVisit), 380);
+    this.enterTimer = setTimeout(() => this.afterEnter(p, firstVisit), 380);
   },
 
   /* ---------------- camera (portrait): the world window follows the player ---------------- */
@@ -181,6 +181,7 @@ const ExploreScene = {
 
   exit() {
     this.running = false;
+    clearTimeout(this.enterTimer);
     cancelAnimationFrame(this.raf);
     clearInterval(this.wd);
     UI.scene.removeEventListener('pointerdown', this._down);
@@ -297,18 +298,24 @@ const ExploreScene = {
     const idleP = first.then(dec).then(u => { e.spr.idle = u; e._src = null; });
     if (this.pending) this.pending.push(idleP);
     first.then(u => spriteBounds(e.sp, u)).then(b => { if (alive()) this.fitSprite(e, b); });
-    for (let i = 0; i < n; i++) mv.push(MonArt.painted(e.sp, Object.assign({ mv: i / n }, o)));
-    all(mv).then(us => { if (alive()) e.spr.move = us; });
-    loop.push(first);
-    for (let i = 1; i < n; i++) loop.push(MonArt.painted(e.sp, Object.assign({ t: i / n }, o)));
-    all(loop).then(us => { if (alive()) e.spr.loop = us; });
-    MonArt.painted(e.sp, Object.assign({ blink: true }, o)).then(dec).then(u => { e.spr.blink = u; });
+    // Hidden inhabitants only need their rest pose. Start the full cycle when they enter view.
+    e.startSprites = () => {
+      e.startSprites = null;
+      if (!alive()) return;
+      for (let i = 0; i < n; i++) mv.push(MonArt.painted(e.sp, Object.assign({ mv: i / n }, o)));
+      all(mv).then(us => { if (alive()) e.spr.move = us; });
+      loop.push(first);
+      for (let i = 1; i < n; i++) loop.push(MonArt.painted(e.sp, Object.assign({ t: i / n }, o)));
+      all(loop).then(us => { if (alive()) e.spr.loop = us; });
+      MonArt.painted(e.sp, Object.assign({ blink: true }, o)).then(dec).then(u => { e.spr.blink = u; });
+    };
   },
   /**
    * the image for this frame: the move cycle while moving (hoppers: the hop frame for the hop phase, also for a
    * startled hop), closed eyes while asleep, otherwise the idle loop at ~5 fps with a blink as it passes frame 0
    */
   spriteFrame(e, dt) {
+    if (e.startSprites) e.startSprites();
     const S = e.spr;
     if (!S) return;
     let src = S.idle;
@@ -688,7 +695,7 @@ const ExploreScene = {
 
   /* ---------------- loop ---------------- */
   update(dt) {
-    if (Platform.adActive || document.hidden) return;
+    if (Platform.adActive || document.hidden || UI.covered()) return;
     this.time += dt;
     const P = this.player;
     const kx = (this.keys.right ? 1 : 0) - (this.keys.left ? 1 : 0), ky = (this.keys.down ? 1 : 0) - (this.keys.up ? 1 : 0);

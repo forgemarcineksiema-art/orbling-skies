@@ -380,3 +380,9 @@ img.ghost { filter: brightness(0) invert(.55) opacity(.16); }
 
 /* Suspend CSS-only motion while the page is hidden. */
 #game.backgrounded *, #game.backgrounded *::before, #game.backgrounded *::after { animation-play-state: paused !important; }
+
+/* Opaque menu sheets cover the world; its CSS motion resumes when the sheet closes. */
+#game.sheet-covered #scene *, #game.sheet-covered #scene *::before, #game.sheet-covered #scene *::after { animation-play-state: paused !important; }
+
+.scene-error { display: grid; place-items: center; background: #152e44; }
+.scene-error-card { width: 85%; max-width: 650px; padding: 30px; border-radius: 20px; background: #f4f8ff; color: #172537; text-align: center; font-size: 26px; }

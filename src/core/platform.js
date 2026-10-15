@@ -11,15 +11,20 @@ const Platform = {
   _onAdEnd: [],
 
   async init() {
+    const ready = async promise => {
+      let timer;
+      try { return await Promise.race([promise, new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('SDK init timed out')), 6000); })]); }
+      finally { clearTimeout(timer); }
+    };
     try {
       if (window.PokiSDK) {
         this.kind = 'poki';
-        await window.PokiSDK.init().catch(() => {});
+        await ready(window.PokiSDK.init().catch(() => {}));
         if (/[?&]pokiDebug=true/.test(location.search)) window.PokiSDK.setDebug && window.PokiSDK.setDebug(true);
       } else if (window.CrazyGames && window.CrazyGames.SDK) {
         this.kind = 'crazygames';
         this.sdk = window.CrazyGames.SDK;
-        await this.sdk.init();
+        await ready(this.sdk.init());
         try { this.sdk.game.loadingStart(); } catch (e) { /* optional */ }
         try {
           this.sdk.game.addSettingsChangeListener(() => { if (typeof Snd !== 'undefined') Snd.applySettings(); });

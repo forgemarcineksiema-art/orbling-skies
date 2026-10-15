@@ -28,11 +28,27 @@ const { createHarness } = require('./battle_harness');
     assert.equal(Game.load(), false); assert.equal(Game.s, null); assert.equal(Game._loadFailed, true);
     assert.equal(Game.save(), false); assert.equal(h.store[SAVE_KEY], raw, 'failed load never overwrites the original');
   }
+  const originalTimer = h.setTimeout;
+  h.setTimeout = fn => { queueMicrotask(fn); return 0; };
+  h.window.OG_TARGET = 'poki'; h.window.PokiSDK = { init: () => new Promise(() => {}) };
+  await Platform.init();
+  assert.equal(Platform.kind, 'none', 'a stalled portal SDK must not block startup or enable simulated rewards');
+  delete h.window.PokiSDK;
+  h.window.CrazyGames = { SDK: { init: () => new Promise(() => {}) } };
+  await Platform.init(); assert.equal(Platform.kind, 'none'); assert.equal(Platform.sdk, null);
+  delete h.window.CrazyGames; delete h.window.OG_TARGET;
+  h.setTimeout = originalTimer; Platform.kind = 'local';
+
   fresh();
   const d = JSON.parse(h.store[SAVE_KEY]); delete d.base.decor.yard; delete d.stats.catchEl.air;
   h.store[SAVE_KEY] = JSON.stringify(d); Game.s = null;
   assert.equal(Game.load(), true); assert.deepEqual(Array.from(Game.s.base.decor.yard), []);
   assert.equal(Game.s.stats.catchEl.air, 0, 'missing nested legacy fields are filled');
+
+  const released = Game.makeMon('breezle', 4); Game.addMon(released);
+  assert.equal(Game.release(released.id), true);
+  assert.equal(Game.release(released.id), false, 'a stale confirmation cannot release/reward the same monster twice');
+  assert.equal(Game.release(Game.s.team[0]), false, 'the final team member remains protected');
 
   const mon = (sign, lv = 20) => Game.makeMon(LINES[sign].ids[0], lv, { noShiny: true });
   const aries = mon('aries'), partner = mon('leo');
