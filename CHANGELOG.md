@@ -1,5 +1,11 @@
 # Historia zmian
 
+**Wersja 3.7.0 — atmosfera i osobowość.** Szepczący Las ma chłodniejszą głębię, stary znak
+gwiazdy i spokojniejszy motyw muzyczny. Sunkit i Breezle otrzymują odmienne gesty i głosy.
+Strażnicy mają krótką, pomijalną prezentację z pieczęcią wyspy i partnerem. Mniej dekoracyjnych
+cząsteczek oraz obsługa systemowego ograniczenia ruchu zmniejszają wizualny szum.
+[Decyzje, źródła i zakres testów](docs/ART-DIRECTION-3.7.0.md).
+
 **Wersja 3.6.0 — nawigacja i czytelność na telefonie.** Strzałki przejścia są przyciskami
 z nazwą lokacji. Dotknięcie celu pokazuje listę trenerów i drogę do brakujących przeciwników.
 Baza jest dostępna po pierwszym złapaniu, bez pośrednictwa mapy. Cztery podpisane przyciski

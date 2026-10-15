@@ -65,15 +65,15 @@ const BattleScene = {
     UI.hudShow(false);
     Painter.hold('battle', true); // the bestiary paints on after the fight, not during it
     if (this.kind === 'wild') for (const id of ORB_IDS) if (Game.item(id) > 0) { WArt.orbPart(id, 'core'); WArt.orbPart(id, 'belt'); } // the catch's orb, painted in time
-    Snd.music(this.bossy() ? 'boss' : 'battle');
-    Platform.gameplayStart();
+    if (this.kind === 'guardian') { Snd.stopMusic(); Platform.gameplayStop(); }
+    else { Snd.music(this.bossy() ? 'boss' : 'battle'); Platform.gameplayStart(); }
     Game.s.stats.battles++;
     window.addEventListener('keydown', this._kd = e => this.onKey(e));
     // blinking: every fighter shuts its eyes for a moment now and then
     clearInterval(this.blinkT);
     // the fighters' idle loops (flames flicker, tails sway, wings flutter …) at ~5 fps, with a blink as a loop starts over
     this.blinkT = setInterval(() => {
-      if (document.hidden || Platform.adActive) return;
+      if (document.hidden || Platform.adActive || Main.reducedMotion) return;
       for (const sl of [this.monE, this.monP]) {
         if (!sl || !sl.paint) continue;
         const L = sl.paint.loop;
@@ -91,6 +91,7 @@ const BattleScene = {
     this.introTimer = setTimeout(() => this.intro().catch(e => console.error(e)), 300);
   },
   exit() {
+    if (this.encounter) { this.encounter.finish(); this.encounter = null; }
     clearTimeout(this.introTimer);
     for (const slot of [this.monE, this.monP]) if (slot) { slot.tok = null; slot.paint = null; }
     clearInterval(this.blinkT);
@@ -418,6 +419,7 @@ const BattleScene = {
     if (this.kind === 'wild') this.dial.classList.add('r-' + this.e.sp.rarity); // the ring shows how rare this one is
     this.setSprite(this.monE, this.e);
     Game.see(this.e.mon.sp);
+    if (this.kind === 'guardian') { await this.guardianEntrance(); return; }
     if (this.kind === 'wild' || this.kind === 'legend') {
       await this.wildIn();
       this.renderCard('e');
@@ -479,6 +481,44 @@ const BattleScene = {
     setTimeout(() => w.remove(), 1050);
   },
   /** tamer battles open with a VS splash */
+  /** A short, skippable guardian introduction replaces the whole generic VS/send-out sequence. */
+  async guardianEntrance() {
+    const pi = Game.team().findIndex(m => m.hp > 0);
+    this.p = BL.fighter(Game.team()[pi], 'p'); this.setSprite(this.monP, this.p);
+    this.monE.spr.style.opacity = this.monP.spr.style.opacity = 1;
+    this.renderCard('e'); this.renderCard('p');
+    const isle = this.T.guardian;
+    const el = U.el('div', { class: 'guardian-reveal', role: 'dialog', 'aria-label': UI.whoName(this.tamerId) },
+      U.el('div', { class: 'guardian-content' },
+        U.el('div', { class: 'guardian-seal', html: Menus.sigilSvg(isle, 76), 'aria-hidden': 'true' }),
+        U.el('small', { class: 'guardian-isle', text: t('isle.' + isle) }),
+        U.el('b', { class: 'guardian-name', text: UI.whoName(this.tamerId) }),
+        U.el('div', { class: 'guardian-figures', 'aria-hidden': 'true' },
+          U.el('i', { class: 'guardian-orbit' }),
+          U.img(WArt.person(tamerLook(this.tamerId)), 'guardian-person'),
+          U.img(MonArt.url(this.e.mon.sp, { shiny: this.e.mon.shiny, size: 'lg' }), 'guardian-partner'))));
+    el.style.setProperty('--guardian-color', ISLE_COL[isle] || '#91c7ae');
+    const skip = U.el('button', { class: 'guardian-skip btn white', text: t('ui.skip') });
+    el.appendChild(skip); UI.scene.appendChild(el);
+    const encounter = this.encounter = { el, finish: null, sources: Snd.guardianCue() };
+    await new Promise(resolve => {
+      let done = false;
+      const key = e => { if (e.key === 'Escape' || e.key === ' ' || e.key === 'Enter') { e.preventDefault(); finish(); } };
+      const finish = () => {
+        if (done) return; done = true; clearTimeout(timer);
+        window.removeEventListener('keydown', key);
+        for (const source of encounter.sources) if (source) { try { source.stop(); } catch (e) { /* already ended */ } }
+        encounter.sources = []; el.remove(); resolve();
+      };
+      const timer = setTimeout(finish, Main.reducedMotion || Main.settings.fast || this.p0.rematch ? 700 : 1800);
+      encounter.finish = finish; skip.onclick = finish;
+      window.addEventListener('keydown', key);
+    });
+    if (this.encounter !== encounter || this.over || UI.cur !== this) return;
+    this.encounter = null;
+    Snd.music('boss'); Snd.cry(this.e.mon.sp);
+    Platform.gameplayStart(); this.ready();
+  },
   async vsSplash() {
     const boss = this.bossy();
     const por = (src, name, sub) => U.el('div', { class: 'vs-card' }, U.el('div', { class: 'vs-por' }, U.img(src)), U.el('b', { text: name }), sub ? U.el('small', { text: sub }) : null);

@@ -42,7 +42,7 @@ const ST_FX = { burn: 'fire', poison: 'poison', shock: 'bolt', sleep: 'dream', f
 const FX = {
   /** effect speed: fast battles play animations quicker */
   get k() { return typeof Main !== 'undefined' && Main.settings.fast ? 0.65 : 1; },
-  shakeOn() { return !(typeof Main !== 'undefined' && Main.settings.shake === false); },
+  shakeOn() { return !(typeof Main !== 'undefined' && (Main.settings.shake === false || Main.reducedMotion)); },
 
   /* ---------------- primitives ---------------- */
   T(x, y, s = 1, r = 0) { return `translate(-50%,-50%) translate(${x.toFixed(1)}px,${y.toFixed(1)}px) rotate(${r.toFixed(0)}deg) scale(${s.toFixed(3)})`; },
@@ -121,6 +121,7 @@ const FX = {
     return this.go(e, [{ transform: this.T(0, 0, 0.3), opacity: 0 }, { transform: this.T(0, 0, 1), opacity: 1, offset: 0.35 }, { transform: this.T(0, 0, 1.25), opacity: 0 }], { duration: dur * this.k });
   },
   flash(color = '#ffffff', alpha = 0.6, dur = 260) {
+    if (typeof Main !== 'undefined' && Main.reducedMotion) return Promise.resolve();
     const e = this.spawn('fx-flash', 0, 0, { bg: color });
     e.style.transform = 'none';
     return this.go(e, [{ opacity: alpha }, { opacity: 0 }], { duration: dur * this.k, easing: 'ease-out' });

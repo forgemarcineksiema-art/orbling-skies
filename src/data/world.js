@@ -20,7 +20,7 @@ const ZONES = {
     ship: [120, 486], pod: [235, 628], chest: [620, 634], exits: [['whisper', 1236, 566, 0]], start: [300, 560],
   },
   whisper: {
-    isle: 'sunny', biome: 'forest', seed: 12, lv: [4, 7], max: 4,
+    isle: 'sunny', biome: 'forest', music: 'whisper', seed: 12, lv: [4, 7], max: 4,
     spawns: [['budlet', 26], ['zapsy', 22], ['nimbub', 22], ['goatlet', 22], ['fluffire', 14], ['mossmoo', 12], ['cinderfawn', 4]],
     npcs: [['t_owen', 430, 610], ['t_zoe', 760, 470], ['g_fern', 1110, 520]],
     pod: [150, 470], chest: [620, 634], exits: [['clover', 44, 566, 1]], start: [120, 590],

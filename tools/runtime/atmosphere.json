@@ -1,0 +1,96 @@
+[
+  {
+    "wait": 4500
+  },
+  {
+    "eval": "(async()=>{const deadline=performance.now()+30000;while(document.querySelector('#loader')||UI.busyGo){if(performance.now()>deadline)throw Error('boot timeout');await U.sleep(100);}eval(await(await fetch('/tools/audit.js')).text());await Audit.setup();setLang('pl');Main.settings.fast=false;Game.s.flags.homeIntro=1;window.guard=async(id='g_fern')=>{await UI.go(BattleScene,{kind:'guardian',tamer:id,enemies:TAMERS[id].team.map(([sp,lv])=>Game.makeMon(sp,lv)),zone:'whisper'});await U.sleep(350);};return Main.VERSION||VERSION;})()",
+    "print": true
+  },
+  {
+    "eval": "(async()=>{U.dayPhase=()=>'day';await UI.go(ExploreScene,{zone:'whisper'});ExploreScene.player.x=650;ExploreScene.player.y=570;UI.closeAll(true);return Snd.cur;})()",
+    "wait": 1500,
+    "shot": "forest-day"
+  },
+  {
+    "eval": "(async()=>{U.dayPhase=()=>'night';await UI.go(ExploreScene,{zone:'whisper'});ExploreScene.player.x=650;ExploreScene.player.y=570;UI.closeAll(true);return Snd.cur;})()",
+    "wait": 1500,
+    "shot": "forest-night"
+  },
+  {
+    "eval": "(async()=>{U.dayPhase=()=>'dawn';await UI.go(ExploreScene,{zone:'whisper'});ExploreScene.player.x=650;ExploreScene.player.y=570;UI.closeAll(true);return Snd.cur;})()",
+    "wait": 1500,
+    "shot": "forest-dawn"
+  },
+  {
+    "eval": "(async()=>{U.dayPhase=()=>'dusk';await UI.go(ExploreScene,{zone:'whisper'});ExploreScene.player.x=650;ExploreScene.player.y=570;UI.closeAll(true);return Snd.cur;})()",
+    "wait": 1500,
+    "shot": "forest-dusk"
+  },
+  {
+    "eval": "(async()=>{await guard();return !!BattleScene.encounter;})()",
+    "shot": "guardian",
+    "print": true
+  },
+  {
+    "eval": "(()=>{const r=document.querySelector('.guardian-skip').getBoundingClientRect();if(r.height<44||r.width<44||r.bottom>innerHeight||r.top<0)throw Error('skip bounds '+JSON.stringify(r));return[r.x+r.width/2,r.y+r.height/2];})()",
+    "click": true,
+    "wait": 150
+  },
+  {
+    "eval": "(async()=>{const b=BattleScene,p=b.p; p.en=1;p.status='burn';const old={};for(const k of ['faintFx','say','awardXp','orbIn']){old[k]=b[k];b[k]=async()=>{};}try{b.e.mon.hp=0;await b.checkFaints();if(b.p!==p||p.en!==1||p.status!=='burn'||!b.newEnemy||b.encounter)throw Error('replacement reset fighter');}finally{Object.assign(b,old);}return 'replacement preserves fighter';})()",
+    "print": true
+  },
+  {
+    "eval": "(async()=>{await guard();await UI.go(ExploreScene,{zone:'clover'});await U.sleep(1900);if(BattleScene.encounter||document.querySelector('.guardian-reveal')||Snd.cur!=='explore')throw Error('reveal survives exit');return 'exit cleanup OK';})()",
+    "print": true
+  },
+  {
+    "cdp": "Emulation.setEmulatedMedia",
+    "params": {
+      "features": [
+        {
+          "name": "prefers-reduced-motion",
+          "value": "reduce"
+        }
+      ]
+    }
+  },
+  {
+    "wait": 200
+  },
+  {
+    "eval": "(()=>{if(!Main.reducedMotion||ExploreScene.amb.children.length)throw Error('reduced ambient');ExploreScene.tod='night';ExploreScene.meteorT=0;ExploreScene.updateSky(1);if(ExploreScene.amb.children.length)throw Error('reduced meteor');return 'reduced motion OK';})()",
+    "print": true
+  },
+  {
+    "eval": "guard()",
+    "wait": 850
+  },
+  {
+    "eval": "if(BattleScene.encounter||BattleScene.busy)throw Error('reduced intro duration');'short intro OK'",
+    "print": true
+  },
+  {
+    "cdp": "Emulation.setEmulatedMedia",
+    "params": {
+      "features": [
+        {
+          "name": "prefers-reduced-motion",
+          "value": "no-preference"
+        }
+      ]
+    }
+  },
+  {
+    "eval": "(async()=>{let count=0;for(const lang of ['en','pl','de','es','fr','it','pt','tr','ru']){setLang(lang);for(const id of Object.keys(TAMERS).filter(id=>TAMERS[id].guardian)){await guard(id);const el=document.querySelector('.guardian-reveal'),s=el.querySelector('.guardian-skip').getBoundingClientRect(),n=el.querySelector('.guardian-name').getBoundingClientRect();if(s.height<44||s.bottom>innerHeight||n.left<0||n.right>innerWidth||n.top<0)throw Error(lang+' '+id+' bounds '+JSON.stringify(s));el.querySelector('button').click();count++;}}setLang('pl');return {guardianLayouts:count};})()",
+    "print": true
+  },
+  {
+    "eval": "(async()=>{Main.settings.fast=true;await guard();await U.sleep(850);if(BattleScene.encounter)throw Error('fast entrance');Main.settings.fast=false;await UI.go(ExploreScene,{zone:'whisper'});Main.setLite(true);ExploreScene.amb.replaceChildren();ExploreScene.ambient();if(ExploreScene.amb.children.length>6)throw Error('lite particles');return 'fast/lite OK';})()",
+    "print": true
+  },
+  {
+    "eval": "(async()=>{\nconst keys=['ctx','musicBus','sfxBus','noiseBuf']; const saved=Object.fromEntries(keys.map(k=>[k,Snd[k]]));\nSnd.stopMusic(); const ctx=new OfflineAudioContext(1,44100*28,44100);const bus=ctx.createGain();bus.gain.value=.5;bus.connect(ctx.destination);\nSnd.ctx=ctx;Snd.musicBus=Snd.sfxBus=bus;Snd.noiseBuf=ctx.createBuffer(1,44100,44100);const n=Snd.noiseBuf.getChannelData(0);for(let i=0;i<n.length;i++)n[i]=Math.random()*2-1;\nlet active=0;const create=ctx.createOscillator.bind(ctx);ctx.createOscillator=()=>{const o=create(),d=o.disconnect.bind(o);active++;o.disconnect=()=>{active--;d();};return o;};\ntry{const p=parseTrack(TRACKS.whisper),sd=60/TRACKS.whisper.bpm/2;for(const ch of p.chans)ch.ev.forEach((ev,i)=>{if(ev)Snd._inst(ch.inst,ev.f,ev.n*sd,i*sd,bus,1);});for(const f of [196,294,440])Snd._tone(f,.5,{delay:.2,vol:.055}).stop();const b=await ctx.startRendering();let peak=0;for(const v of b.getChannelData(0)){if(!Number.isFinite(v))throw Error('invalid audio');peak=Math.max(peak,Math.abs(v));}if(active!==0||peak>=1||peak<.001)throw Error('audio lifecycle/peak '+active+' '+peak);return {peak,remainingOscillators:active};}finally{Object.assign(Snd,saved);}\n})()\n",
+    "print": true
+  }
+]

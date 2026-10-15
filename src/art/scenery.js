@@ -915,17 +915,30 @@ const Scenery = (() => {
 
     forest(C) {
       const R = C.R;
-      let s = sky(C, [[0, '#cfeccd'], [0.5, '#eaf5d4'], [1, '#f6f2d0']]);
+      let s = sky(C, [[0, '#86b8b4'], [0.5, '#b4d7c9'], [1, '#d8e6c2']]);
       let far = '';
-      for (let i = 0; i < 26; i++) { const x = R() * W, w = 10 + R() * 16; far += Rect(x, 60, w, 360, '#a9c9a8', op(0.7)); }
-      for (let i = 0; i < 16; i++) far += crown(C, R() * W, 40 + R() * 120, 70 + R() * 50, { hi: '#e8f6d8', lit: '#cde5c0', mid: '#b8d6ae', sh: '#9fc29c' }, { dabs: 0 });
+      for (let i = 0; i < 26; i++) { const x = R() * W, w = 10 + R() * 16; far += Rect(x, 60, w, 360, '#78a9a6', op(0.7)); }
+      for (let i = 0; i < 16; i++) far += crown(C, R() * W, 40 + R() * 120, 70 + R() * 50, { hi: '#bddcd0', lit: '#91c0b2', mid: '#72a99f', sh: '#548d85' }, { dabs: 0 });
       s += G(far, C.blur(3));
       s += shafts(C, 140, -80, 9, 950, '#fffbd8', 0.3, 0.12, 0.4);
       for (let i = 0; i < 11; i++) {
         const x = 40 + i * 118 + (R() - 0.5) * 50, w = 20 + R() * 20;
-        s += Pn(`M${f(x)} 0L${f(x + w)} 0L${f(x + w * 1.1)} 420L${f(x - w * 0.1)} 420Z`, '#809f78') + Rect(x + 2, 0, w * 0.28, 420, '#a8c49a', op(0.7)) + Rect(x + w * 0.7, 0, w * 0.3, 420, '#5f7f5c', op(0.5));
+        s += Pn(`M${f(x)} 0L${f(x + w)} 0L${f(x + w * 1.1)} 420L${f(x - w * 0.1)} 420Z`, '#4d8175') + Rect(x + 2, 0, w * 0.28, 420, '#89b0a0', op(0.7)) + Rect(x + w * 0.7, 0, w * 0.3, 420, '#35695f', op(0.5));
       }
-      s += Rect(0, 300, W, 130, C.lin([[0, '#e8f5d0', 0], [1, '#e8f5d0', 0.6]]));
+      s += Rect(0, 300, W, 130, C.lin([[0, '#c4e3d1', 0], [1, '#c4e3d1', 0.6]]));
+      // The broken star dial is a quiet landmark, not a glowing collectible or a new hit target.
+      const dial = C.lin(['#8eafa0', '#426d65']);
+      s += En(650, 426, 128, 13, C.soft('#173d36', 0.35, 0.3));
+      s += Pn('M552 423L568 327L582 312L588 424Z M716 422L721 312L736 327L752 423Z', '#42675b');
+      s += Ln('M564 312A102 102 0 1 1 743 310', '#33564f', 30);
+      s += Ln('M564 306A102 102 0 1 1 743 304', dial, 23);
+      s += Ln('M574 303A90 90 0 1 1 733 300', '#bed1b0', 2, op(0.65));
+      s += Ln('M606 181l6 18M687 179l-6 17M550 246l18 2M750 240l-18 3', '#d9d7a4', 3, op(0.7));
+      s += Pn('M650 231L657 256L681 264L657 272L650 298L642 272L619 264L642 256Z', '#a9c4ad', op(0.8));
+      s += Ln('M650 203v28M596 219l23 22M706 216l-25 25', '#8ead9c', 2, op(0.55));
+      s += Ln('M610 174l-7 10 6 11M727 198l-12 14 9 9M550 273l14 10', '#254d44', 3);
+      s += fern(C, 576, 422, 36, { lit: '#b3cc83', mid: '#5c915d', sh: '#315c43' });
+      s += fern(C, 732, 423, 42, { lit: '#b3cc83', mid: '#5c915d', sh: '#315c43' });
       for (let i = 0; i < 26; i++) s += crown(C, R() * W, 408 + R() * 10, 16 + R() * 18, { hi: '#e0f5b0', lit: '#9fcf7a', mid: '#6fa85a', sh: '#437f46' }, { n: 5, dabs: 2 });
       for (let i = 0; i < 18; i++) s += fern(C, R() * W, 424 + R() * 8, 22 + R() * 16, { lit: '#c8f08a', mid: '#5aa545', sh: '#2f7a3a' });
       // near trunks framing the scene: root flare, bark, moss
@@ -948,7 +961,7 @@ const Scenery = (() => {
       const lx = 150 + R() * 900, ly = 650 + R() * 30;
       s += En(lx, ly + 8, 110, 12, C.soft('#1a3020', 0.5, 0.3)) + Pn(`M${f(lx - 100)} ${f(ly - 20)}L${f(lx + 90)} ${f(ly - 26)}Q${f(lx + 104)} ${f(ly - 8)} ${f(lx + 90)} ${f(ly + 8)}L${f(lx - 100)} ${f(ly + 6)}Z`, '#6a5040') + En(lx + 92, ly - 9, 11, 17, '#c8a070') + En(lx + 92, ly - 9, 6, 10, '#a07a50', op(0.8)) +
         Pn(`M${f(lx - 100)} ${f(ly - 20)}Q${f(lx - 20)} ${f(ly - 36)} ${f(lx + 60)} ${f(ly - 26)}L${f(lx + 60)} ${f(ly - 16)}Q${f(lx - 20)} ${f(ly - 22)} ${f(lx - 100)} ${f(ly - 10)}Z`, '#6ab04a') + fern(C, lx - 90, ly + 6, 24, { lit: '#c8f08a', mid: '#5aa545', sh: '#2f7a3a' });
-      s += finish(C, { warm: '#fff4c0', warmA: 0.3, lx: 140, ly: 0, cool: '#1f4a3a', coolA: 0.2, vig: '#0f2a1a', vigA: 0.34 });
+      s += finish(C, { warm: '#fff4c0', warmA: 0.19, lx: 140, ly: 0, cool: '#154d50', coolA: 0.23, vig: '#0f2a1a', vigA: 0.34 });
       return s;
     },
 
