@@ -498,8 +498,9 @@ const ExploreScene = {
       // the orange "leave this way" arrow, pointing off-screen (not before the first catch: then the one
       // arrow on the meadow is the pointer over the tutorial Orbling)
       if (this.tut) continue;
-      const ar = U.el('div', { class: 'exit-arrow ' + (dir ? 'l' : 'r') }, U.img(HudArt.arrow()));
-      ar.style.left = (dir ? 64 : -150) + 'px'; ar.style.bottom = '-4px';
+      const ar = U.el('button', { type: 'button', class: 'exit-arrow snd ' + (dir ? 'l' : 'r'), 'aria-label': name, onclick: ev => { ev.stopPropagation(); if (!UI.anyModal() && !UI.busyGo) this.useExit(to); } }, U.img(HudArt.arrow()), U.el('span', { text: name }));
+      ar.addEventListener('pointerdown', ev => ev.stopPropagation());
+      ar.style.left = (dir ? 30 : -240) + 'px'; ar.style.bottom = '-4px';
       e.el.appendChild(ar);
     }
   },

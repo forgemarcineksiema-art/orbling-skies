@@ -1,0 +1,29 @@
+[
+  {
+    "wait": 5000
+  },
+  {
+    "eval": "(async()=>{eval(await(await fetch('/tools/audit.js')).text());await Audit.setup();setLang('pl');Game.s.sigils=[];Game.s.visited=['clover'];Game.s.beaten={t_tim:1,t_lily:1};Game.s.quests.main=MAIN_QUESTS.findIndex(q=>q.id==='q4');Game.release(Game.s.team[2]);Game.addMon(Game.makeMon('breezle',6));Game.s.loc.x=1130;await UI.go(ExploreScene,{zone:'clover'});await U.sleep(1500);UI.closeAll(true);return {targets:Quests.tamerTargets(Quests.main()),base:Base.open(),version:VERSION};})()",
+    "wait": 4000
+  },
+  {
+    "eval": "UI.closeAll(true);UI.toastQ=[];UI._cheers=[];UI.toasts.replaceChildren();Menus.team();UI.toast('notice A','good',{defer:true});UI.toast('notice B','good',{defer:true});UI.cheer('reward C',{coins:1},{sound:null});'queued';",
+    "wait": 1000
+  },
+  {
+    "eval": "if(UI.toasts.children.length)throw Error('Notification over menu');UI.closeAll(true);UI.zoneBanner(ZONES.clover,false);",
+    "wait": 1000
+  },
+  {
+    "eval": "if(UI.toasts.children.length)throw Error('Notification over location');ExploreScene.pipSay('instruction',5000);",
+    "wait": 3000
+  },
+  {
+    "eval": "if(UI.toasts.children.length)throw Error('Notification over instruction');window.noticeNames=[];window.maxNotices=0;window.noticeObserver=new MutationObserver(()=>{window.maxNotices=Math.max(window.maxNotices,UI.toasts.querySelectorAll('.toast:not(.out)').length);for(const e of UI.toasts.children){if(!e.dataset.observed){e.dataset.observed=1;window.noticeNames.push(e.textContent);}}});noticeObserver.observe(UI.toasts,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});",
+    "wait": 12500
+  },
+  {
+    "eval": "noticeObserver.disconnect();if(maxNotices!==1||!['notice A','notice B','reward C+1'].every(name=>noticeNames.includes(name))||UI.toastQ.length||UI._cheers.length)throw Error(JSON.stringify({maxNotices,noticeNames}));({maxNotices,noticeNames,queued:0});",
+    "print": true
+  }
+]

@@ -196,12 +196,12 @@ const BattleScene = {
     el.style.visibility = '';
     el.classList.toggle('alpha', !!f.alpha);
     const sp = f.sp;
+    const owned = side === 'e' && this.kind === 'wild' ? Game.allMons().filter(m => m.sp === sp.id).length : 0;
     const role = side === 'p' ? '' : f.alpha ? t('b.alpha') : this.kind === 'wild' ? t('b.wild_tag') : this.kind === 'legend' ? t('b.legend_tag') : t('b.foe_tag');
     el.append(U.el('div', { class: 'bp-top' },
       U.el('span', { class: 'bp-sign', html: signIcon(sp.sign, 40) }),
       U.el('b', { class: 'bp-name' + (f.alpha ? ' gold' : sp.legend ? ' legend' : ''), text: sp.name }),
       f.mon.shiny ? U.el('span', { class: 'bp-shiny', text: '✦' }) : null,
-      side === 'e' && Game.caught(sp.id) && this.kind === 'wild' ? U.el('span', { class: 'bp-own', title: t('b.owned'), html: `<img src="${WArt.item('orb')}">` }) : null,
       role ? U.el('em', { class: 'bp-role', text: role }) : null));
     if (side === 'e' && (this.kind === 'wild' || this.kind === 'legend')) el.firstChild.appendChild(U.el('i', { class: 'bp-rar r-' + sp.rarity, text: t('rar.' + sp.rarity) }));
     f.hpBar = UI.bar(1, 'hp');
@@ -209,6 +209,7 @@ const BattleScene = {
     el.append(U.el('div', { class: 'bp-bar' }, f.hpBar, f.hpTxt));
     f.stEl = U.el('span', { class: 'bc-st' });
     const bot = U.el('div', { class: 'bp-bot' }, U.el('span', { class: 'bp-lv', text: t('ui.lv') + ' ' + f.mon.lv }), U.el('span', { class: 'bp-el', html: elIcon(sp.el, 20) }), f.stEl);
+    if (side === 'e' && (owned || Game.caught(sp.id)) && this.kind === 'wild') bot.appendChild(U.el('span', { class: 'bp-own', 'aria-label': owned ? t('ux.owned', { n: owned }) : t('b.owned'), title: owned ? t('ux.owned', { n: owned }) : t('b.owned') }, U.img(WArt.item('orb')), owned ? U.el('small', { text: '×' + owned }) : null));
     el.appendChild(bot);
     if (side === 'p') {
       f.enEl = U.el('div', { class: 'bc-en' });

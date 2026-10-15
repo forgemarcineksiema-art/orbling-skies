@@ -912,3 +912,38 @@
 #game:not(.port) .b-msg { top: 12px; height: 52px; }
 #game:not(.port) .b-side { right: 24px; top: 72px; gap: 52px; }
 #game:not(.port) .b-side .sb em { text-transform: none; font-size: 18px; letter-spacing: 0; }
+
+/* 3.6: named touch destinations and a small, stable mobile navigation. */
+.exit-arrow { pointer-events: auto; width: 230px; min-height: 66px; height: auto; display: flex; align-items: center; gap: 5px; padding: 6px 10px; border: 3px solid #172c40; border-radius: 16px; background: #fff8dc; color: #172c40; box-shadow: 0 4px 0 #172c40; font: 800 21px/1.15 var(--f-ui); cursor: pointer; }
+.exit-arrow img { flex: 0 0 45px; width: 45px; height: 42px; animation: none !important; filter: none; }
+.exit-arrow span { min-width: 0; overflow-wrap: anywhere; }
+.exit-arrow.r img { order: 2; }
+.mobile-nav { display: none; }
+.port .mobile-nav:not([hidden]) { position: absolute; top: 6px; left: 6px; right: 6px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.mobile-nav button { display: flex; align-items: center; justify-content: center; flex-direction: column; min-width: 0; min-height: 76px; padding: 4px; background: linear-gradient(#37627d, #17334b); color: white; border: 2px solid #102638; border-radius: 14px; box-shadow: inset 0 1px 0 #7796ad, 0 3px 0 #102638; font: 800 20px/1.05 var(--f-ui); }
+.mobile-nav img { width: 38px; height: 38px; object-fit: contain; }
+.port #hud:has(.mobile-nav:not([hidden])) .hb-tiles, .port #hud:has(.mobile-nav:not([hidden])) .hb-gear, .port #hud:has(.mobile-nav:not([hidden])) .hb-shop, .port #hud:has(.mobile-nav:not([hidden])) .hb-wheel { display: none; }
+.port #hud:has(.mobile-nav:not([hidden])) .hb-res { top: 94px; }
+.port #hud:has(.mobile-nav:not([hidden])) .hb-left { top: 158px; }
+.port #hud:has(.mobile-nav:not([hidden])) .hb-left .npc, .port #hud:has(.mobile-nav:not([hidden])) .hb-left .daily { display: none; }
+.port .hb-goal { max-width: 438px; }
+.bp-own { display: inline-flex; align-items: center; flex: none; gap: 2px; border-radius: 12px; background: #edf5fc; padding: 2px 5px; color: #183248; text-shadow: none; }
+.bp-own small { font: 800 18px var(--f-ui); }
+.collection-count { display: block; margin: 8px 0 0; color: #29455e; font: 700 21px var(--f-ui); }
+/* A travel control must stay tappable when a character walks in front of its sign. */
+.ent-exit { z-index: 1000 !important; }
+.port .mobile-nav button { height: 80px; }
+.port .mobile-nav span { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hb-goal { pointer-events: auto; }
+.port .hb-goal { top: 0; transform: none; }
+.port .zbanner { top: 278px; }
+.port .zbanner b { font-size: 28px; }
+.port .zbanner small { font-size: 18px; }
+#game.port:has(.mobile-nav:not([hidden])):not(.modal-on) #toasts { padding-top: 282px; }
+#game.port.zb-on:has(.mobile-nav:not([hidden])):not(.modal-on) #toasts { padding-top: 385px; }
+
+/* Keep all four labelled destinations clear of Poki's reserved corner. */
+#game.pk-pill.port .mobile-nav { left: calc(var(--pl) + 6px); }
+#game.pk-pill.port .mobile-nav button { height: max(80px, calc(var(--pb) - 6px)); }
+#game.pk-pill.port #hud:has(.mobile-nav:not([hidden])) .hb-res { top: max(94px, calc(var(--pb) + 12px)); left: 6px; }
+#game.pk-pill.port #hud:has(.mobile-nav:not([hidden])) .hb-left { top: max(158px, calc(var(--pb) + 76px)); }

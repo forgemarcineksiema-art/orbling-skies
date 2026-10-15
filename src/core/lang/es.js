@@ -1,6 +1,12 @@
 'use strict';
 /* Español (es) — translated from English. Missing keys fall back to English; merge new ones with tools/i18n.js. */
 LX('es', {
+  "ux.map": "Mapa",
+  "ux.menu": "Menú",
+  "ux.route": "Ir aquí",
+  "ux.remaining": "Entrenadores por vencer",
+  "ux.compare": "Comparar",
+  "ux.owned": "En colección ×{n}",
   "ui.scene_error": "No se pudo abrir esta pantalla. Pulsa Continuar para volver al juego.",
   "ui.save_failed": "No se pudo guardar el progreso. Mantén esta página abierta y libera espacio en el almacenamiento del navegador.",
   "ti.save_bad": "No se pudo cargar la partida. Se ha conservado; una partida nueva la reemplazará.",

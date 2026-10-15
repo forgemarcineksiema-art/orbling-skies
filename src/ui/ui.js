@@ -211,11 +211,20 @@ const UI = {
     if (!o.silent) Snd.play('open');
     return h;
   },
+  // Non-urgent notifications share one slot and wait for gameplay instructions and transitions.
+  noticeBusy() {
+    return document.hidden || this.stack.length || this.talking || this.busyGo || Platform.adActive ||
+      this.cur === BattleScene || this.hud.querySelector('.zbanner') || this.scene.querySelector('.pip-say:not(.out)') ||
+      this.toasts.querySelector('.toast:not(.out)');
+  },
   flushToasts() {
-    if (this.stack.length) return; // another popup opened meanwhile: wait for it to close
+    clearTimeout(this._toastT); this._toastT = 0;
     const q = this.toastQ || [];
-    this.toastQ = [];
-    q.forEach(([html, cls, sound], i) => setTimeout(() => this.toast(html, cls, { defer: true, sound }), i * 450));
+    if (!q.length) return;
+    if (this.noticeBusy()) { this._toastT = setTimeout(() => this.flushToasts(), 250); return; }
+    const [html, cls, sound] = q.shift();
+    this.toast(html, cls, { sound });
+    if (q.length) this._toastT = setTimeout(() => this.flushToasts(), 2700);
   },
   /** close every window, including any that an onClose handler opens meanwhile (a quest reward popup) */
   closeAll(silent) {
@@ -337,9 +346,9 @@ const UI = {
   },
 
   /* ---------------- toasts & rewards ---------------- */
-  /** o.defer: wait until no menu is open (medal toasts must not cover the panel you are reading) */
+  /** o.defer: queue non-urgent news; errors and action feedback remain immediate. */
   toast(html, cls, o = {}) {
-    if (o.defer && this.stack.length) { (this.toastQ = this.toastQ || []).push([html, cls, o.sound]); return; }
+    if (o.defer) { (this.toastQ = this.toastQ || []).push([html, cls, o.sound]); this.flushToasts(); return; }
     if (o.sound) Snd.play(o.sound);
     const e = U.el('div', { class: 'toast ' + (cls || ''), html });
     e._t = performance.now();
@@ -423,7 +432,7 @@ const UI = {
     const q = this._cheers || [];
     if (!q.length) return;
     const wait = (this._cheerLast || 0) + 650 - performance.now();
-    const busy = this.stack.length || this.talking || this.busyGo || Platform.adActive || this.hud.querySelector('.zbanner'); // (the zone's name band sits where cheers go)
+    const busy = this.noticeBusy();
     if (busy || wait > 0) { this._cheerT = setTimeout(() => this._cheerStep(), Math.max(250, wait)); return; }
     this._cheerLast = performance.now();
     const { title, r, o } = q.shift(), pills = this.pills(r);
@@ -555,7 +564,14 @@ const UI = {
     const gear = U.el('button', { class: 'hb-tile hb-gear snd hud-el', onclick: () => Menus.settings() }, U.img(HudArt.gear(), 'hb-art'), U.el('em', { class: 'hb-tip', text: t('hud.settings') }));
     const shop = U.el('button', { class: 'hb-shop snd hud-el', onclick: () => Menus.shop() }, U.img(HudArt.stall(), 'hb-kramik'), U.el('b', { class: 'hb-shop-t', text: t('hud.shop') }));
     const wheel = U.el('button', { class: 'hb-wheel snd hud-el', onclick: () => Menus.today().then(r => { if (r === 'home') ExploreScene.goHome(); }) }, U.img(HudArt.today(), 'hb-art'), U.el('i', { class: 'hb-badge' }), U.el('em', { class: 'hb-tip', text: t('day.title') }));
-    this.hud.append(tiles, res, gear, shop, wheel, U.el('div', { class: 'hb-left hud-el' }), U.el('div', { class: 'hb-squad hud-el' }));
+    const nav = U.el('nav', { class: 'mobile-nav hud-el', 'aria-label': t('ux.menu') });
+    for (const [key, art, label, action] of [
+      ['map', HudArt.globe(), t('ux.map'), () => { if (UI.cur === GalaxyScene) GalaxyScene.back(); else if (UI.cur === ExploreScene) ExploreScene.openGalaxy(); }],
+      ['team', HudArt.cards(), t('hud.team'), () => Menus.team()],
+      ['base', HudArt.home(), t('hud.home'), () => ExploreScene.goHome()],
+      ['menu', HudArt.scroll(), t('ux.menu'), () => Menus.navigation()],
+    ]) nav.appendChild(U.el('button', { class: 'mobile-nav-' + key + ' snd', onclick: action }, U.img(art), U.el('span', { text: label })));
+    this.hud.append(nav, tiles, res, gear, shop, wheel, U.el('div', { class: 'hb-left hud-el' }), U.el('div', { class: 'hb-squad hud-el' }));
     this.hudUpdate();
   },
   hudRes(kind, icon, fn) {
@@ -571,8 +587,8 @@ const UI = {
       me: st.battles >= 1, res: st.battles >= 1, mons: caught, bag: st.battles >= 2, npcs: caught,
       codex: st.catches >= 2 || Game.codexCount() >= 3,
       quests: st.tamers >= 1 || s.tamer.lv >= 3,
-      map: s.visited.length >= 2 || s.sigils.length >= 1,
-      camp: s.sigils.length >= 1 || Camp.eggsInBag() > 0 || s.camp.eggs.length > 0,
+      map: caught || s.visited.length >= 2 || s.sigils.length >= 1,
+      camp: Base.open(),
       shop: s.tamer.lv >= 3 || st.battles >= 8,
       wheel: s.sigils.length >= 1 || (Quests.dailyOpen() && s.stats.battles >= 12), // the daily panel
     };
@@ -605,6 +621,8 @@ const UI = {
         if (!seen.all) { e.classList.add('hb-new'); setTimeout(() => e.classList.remove('hb-new'), 3600); if (k !== 'res' && k !== 'me') Snd.play('pop'); }
       }
     }
+    const nav = q('.mobile-nav'); if (nav) nav.hidden = !un.camp;
+    set('.mobile-nav-map span', t(this.cur === GalaxyScene ? 'ui.back' : 'ux.map'));
     set('.hb-rank', s.tamer.lv);
     set('.r-coins b', U.fmt(s.coins));
     set('.r-orbs b', U.fmt(Game.item('orb') + Game.item('nova') + Game.item('galaxy')));
@@ -631,8 +649,10 @@ const UI = {
       if (mq) {
         const [c, n] = Quests.progress(mq), hint = Quests.hintIsle(mq);
         const here = hint && UI.cur === ExploreScene && ExploreScene.zone && (ExploreScene.zone.isle === hint);
-        add(WArt.pip(), 'pip', '', () => Menus.quests(), null, U.clamp(c / n, 0, 1),
-          `<b>${Quests.text(mq)}</b>${n > 1 ? ` <u>${Math.min(c, n)}/${n}</u>` : ''}${hint && !here ? `<small>${t('q.where', { isle: t('isle.' + hint) })}</small>` : ''}`);
+        const targets = Quests.tamerTargets(mq).filter(x => !x.beaten);
+        const next = targets[0];
+        add(WArt.pip(), 'pip', '', () => targets.length ? Menus.questGuide(mq) : Menus.quests(), null, U.clamp(c / n, 0, 1),
+          `<b>${Quests.text(mq)}</b>${n > 1 ? ` <u>${Math.min(c, n)}/${n}</u>` : ''}${next ? `<small>${UI.whoName(next.id)} · ${t('zone.' + next.zone)} →</small>` : hint && !here ? `<small>${t('q.where', { isle: t('isle.' + hint) })}</small>` : ''}`);
       }
       if (openDaily && un.quests) add(HudArt.scroll(), 'daily', `<b>${t('q.daily')}</b>` + dl.list.filter(x => !x.claimed).map(x => Quests.text(x)).join('<br>'), () => Menus.quests(), String(openDaily));
       if (un.npcs && UI.cur === ExploreScene && ExploreScene.zone && !ExploreScene.home) {

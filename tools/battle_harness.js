@@ -26,7 +26,7 @@ function createHarness(seed = 20261014, ascendant = 'libra') {
     'src/data/world.js', 'src/data/arena.js', 'src/data/base.js', 'src/game/state.js', 'src/game/quests.js',
     'src/game/camp.js', 'src/game/meta.js', 'src/game/base.js', 'src/game/battle_logic.js', 'src/scenes/battle.js'];
   vm.runInContext(files.map(f => fs.readFileSync(path.join(root, f), 'utf8')).join('\n;\n') +
-    '\n;Object.assign(this, {Game, BL, Base, U, SPECIES, MOVES, LINES, ISLES, TAMERS, BattleScene, Platform, SAVE_KEY, SAVE_V});', ctx);
+    '\n;Object.assign(this, {Game, BL, Base, Quests, U, SPECIES, MOVES, LINES, ISLES, TAMERS, BattleScene, Platform, SAVE_KEY, SAVE_V});', ctx);
   ctx.Math.random = ctx.U.rng(seed);
   ctx.U.sleep = async () => {};
   ctx.U.anim = async () => {};

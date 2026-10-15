@@ -5,8 +5,8 @@
  * of the day, a welcome-back gift) and the mini-stories of isle characters. Save data: Game.s.base. */
 
 const Base = {
-  /** the Base opens with the first sigil or the first egg (the same moment the HUD's Base button appears) */
-  open() { const s = Game.s; return s.sigils.length >= 1 || Camp.eggsInBag() > 0 || s.camp.eggs.length > 0; },
+  /** the Base opens after the first catch, consistently across navigation and quests */
+  open() { const s = Game.s; return !!s.flags.tutDone || s.stats.catches >= 1 || s.sigils.length >= 1 || Camp.eggsInBag() > 0 || s.camp.eggs.length > 0; },
 
   /* ---------------- friendship ---------------- */
   hearts(m) { const fr = m.fr || 0; let h = 0; for (const x of FR_HEARTS) if (fr >= x) h++; return h; },
