@@ -1,12 +1,12 @@
 'use strict';
 /* Boot: SDK init, settings, art warm-up with progress bar, global input & lifecycle handlers. */
 
-const VERSION = '3.6.0';
+const VERSION = '3.7.0';
 const SETTINGS_KEY = 'orbling_galaxy_settings_v1';
 
 const Main = {
   settings: { music: true, sfx: true, lang: '', fast: false, auto: false, shake: true, lite: null, seenIntro: 0 },
-  lite: false,
+  lite: false, reducedMotion: false,
 
   async boot() {
     const bar = document.querySelector('#loader .ld-bar i');
@@ -19,6 +19,11 @@ const Main = {
     setP(0.15);
     this.loadSettings();
     UI.init();
+    const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    this.setReducedMotion(motion.matches);
+    const motionChanged = e => this.setReducedMotion(e.matches);
+    if (motion.addEventListener) motion.addEventListener('change', motionChanged);
+    else if (motion.addListener) motion.addListener(motionChanged);
     // lite mode: chosen in the settings, or guessed from the hardware (and later from the frame rate, probePerf)
     const weak = (navigator.hardwareConcurrency || 4) <= 2 || (navigator.deviceMemory && navigator.deviceMemory <= 2);
     this.setLite(this.settings.lite != null ? !!this.settings.lite : !!weak);
@@ -79,6 +84,12 @@ const Main = {
     else await UI.go(hadSave ? TitleScene : this.settings.seenIntro ? IntroScene : PrologueScene, {});
     setTimeout(() => this.probePerf(), 3000);
     // Paint species on demand. Preparing the entire bestiary competes with play on phones.
+  },
+
+  setReducedMotion(on) {
+    this.reducedMotion = !!on;
+    if (UI.root) UI.root.classList.toggle('reduced-motion', this.reducedMotion);
+    if (UI.cur === ExploreScene && ExploreScene.amb) { ExploreScene.amb.replaceChildren(); ExploreScene.ambient(); }
   },
 
   /** lite mode for slow devices: every other animation frame, half the particles, no heavy filters (.lite) */

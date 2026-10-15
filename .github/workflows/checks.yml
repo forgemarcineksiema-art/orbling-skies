@@ -25,6 +25,8 @@ jobs:
         run: node tools/regression.js
       - name: Rendering resource lifecycles
         run: node tools/perfcheck.js
+      - name: Atmosphere behavior and audio composition
+        run: node tools/atmospherecheck.js
       - name: Build all distributions
         run: node tools/build.js
       - name: Bundled JavaScript syntax

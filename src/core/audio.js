@@ -88,6 +88,11 @@ const Snd = {
     node.connect(g).connect(o.bus || this.sfxBus);
     osc.onended = () => { osc.disconnect(); if (node !== osc) node.disconnect(); g.disconnect(); };
     osc.start(t); osc.stop(t + dur + 0.03);
+    return { stop: () => {
+      const at = c.currentTime;
+      g.gain.cancelScheduledValues(at); g.gain.setTargetAtTime(0.0001, at, 0.01);
+      try { osc.stop(at + 0.04); } catch (e) { /* already ended */ }
+    } };
   },
   _noise(dur, o = {}) {
     const c = this.ctx; if (!c) return;
@@ -204,12 +209,41 @@ const Snd = {
   /** species cry: pitch from the species, timbre from its element, deeper for later stages */
   cry(id) {
     if (!this.sfx() || !SPECIES[id]) return;
+    if (id === 'sunkit') {
+      this._tone(410, 0.16, { type: 'triangle', vol: 0.065, slide: 560 });
+      this._tone(520, 0.22, { type: 'sine', vol: 0.05, slide: 370, delay: 0.13 });
+      return;
+    }
+    if (id === 'breezle') {
+      this._tone(980, 0.12, { type: 'sine', vol: 0.05, slide: 1470 });
+      this._tone(1175, 0.18, { type: 'sine', vol: 0.04, slide: 1568, delay: 0.16 });
+      this._noise(0.18, { filter: 'bandpass', freq: 2400, vol: 0.018, delay: 0.15, attack: 0.04 });
+      return;
+    }
     const sp = SPECIES[id], h = U.hash(id);
     const type = { fire: 'sawtooth', water: 'sine', earth: 'triangle', air: 'square' }[sp.el] || 'triangle';
     const f0 = (320 + (h % 460)) / (1 + (Math.min(sp.stage, 3) - 1) * 0.38) * (sp.legend ? 0.7 : 1);
     this._tone(f0, 0.14, { type, vol: 0.07, slide: f0 * 1.6, lp: 2600 });
     this._tone(f0 * 1.3, 0.2, { type, vol: 0.06, slide: f0 * (h % 2 ? 0.7 : 1.9), delay: 0.11, lp: 2600 });
     if (sp.stage >= 3) this._tone(f0 * 0.5, 0.35, { type: 'triangle', vol: 0.08, slide: f0 * 0.4, delay: 0.05 });
+  },
+
+  /** Sparse environmental punctuation, scheduled by the visible exploration scene only. */
+  environment(biome, night) {
+    if (!this.sfx() || this.adMute || Platform.forcedMute()) return;
+    if (biome === 'forest' || biome === 'home') {
+      this._noise(1.3, { filter: 'bandpass', freq: night ? 440 : 900, slide: 600, vol: 0.025, attack: 0.45 });
+      if (!night) this._tone(1480, 0.16, { type: 'sine', vol: 0.018, slide: 1180, delay: 0.65 });
+    } else if (biome === 'beach' || biome === 'cove') {
+      this._noise(1.8, { freq: 640, slide: 260, vol: 0.035, attack: 0.7 });
+    } else if (['meadow', 'plains', 'snow', 'glacier'].includes(biome)) {
+      this._noise(1.5, { filter: 'bandpass', freq: 520, slide: 360, vol: 0.018, attack: 0.65 });
+    }
+  },
+  /** One restrained three-note signature. Returned sources are cancelled if the reveal is skipped. */
+  guardianCue() {
+    if (!this.sfx() || this.adMute || Platform.forcedMute()) return [];
+    return [196, 294, 440].map((f, i) => this._tone(f, 0.5, { type: 'triangle', vol: 0.055, delay: i * 0.16, attack: 0.04 }));
   },
 
   /* ---------- music ---------- */
@@ -298,6 +332,8 @@ const Snd = {
 };
 
 const INSTR = {
+  wood: { type: 'sine', vol: 0.06 },
+  chime: { type: 'triangle', vol: 0.022, lp: 2800 },
   lead: { type: 'square', vol: 0.05, lp: 2600 },
   lead2: { type: 'triangle', vol: 0.09 },
   bass: { type: 'triangle', vol: 0.14 },
@@ -356,6 +392,18 @@ const TRACKS = {
       arp: ['C4 E4 G4 E4 C4 E4 G4 E4', 'B3 D4 G4 D4 B3 D4 G4 D4', 'A3 C4 E4 C4 A3 C4 E4 C4', 'A3 C4 F4 C4 A3 C4 F4 C4',
             'C4 E4 G4 E4 C4 E4 G4 E4', 'B3 D4 G4 D4 B3 D4 G4 D4', 'A3 C4 E4 C4 A3 C4 E4 C4', 'A3 C4 F4 C4 B3 D4 G4 D4'],
       drums: ['k . h . s . h .', 'k . h . s . h .', 'k . h . s . h .', 'k . h k s . h .', 'k . h . s . h .', 'k . h . s . h .', 'k . h . s . h .', 'k . h k s . s s'],
+    },
+  },
+  // Whisperwood: a sparse Dorian answer to the open meadow, with room for the forest.
+  whisper: {
+    bpm: 76, inst: { lead: 'wood', bass: 'pad', arp: 'chime' },
+    ch: {
+      lead: ['D5 - . . A5 - . .', 'F5 - E5 - D5 - . .', 'G5 - . . A5 - . .', 'E5 - - . . . . .',
+             'D5 - . . A5 - C6 -', 'B5 - A5 - F5 - . .', 'E5 - G5 - A5 - . .', 'D5 - - - . . . .'],
+      bass: ['D3 - - - A3 - - -', 'D3 - - - - - - -', 'G3 - - - D3 - - -', 'A2 - - - - - - -',
+             'D3 - - - A3 - - -', 'G3 - - - - - - -', 'A2 - - - E3 - - -', 'D3 - - - - - - -'],
+      arp: ['. . A5 . . . . .', '. . . . . . D6 .', '. . D6 . . . . .', '. . . . A5 . . .',
+            '. . F6 . . . . .', '. . . . . . E6 .', '. . A5 . . . . .', '. . . . D6 . . .'],
     },
   },
   battle: {

@@ -45,6 +45,7 @@ const UI = {
     this.root.style.transform = `translate(${this.ox}px, ${this.oy}px) scale(${s})`;
     this.root.classList.toggle('port', port);
     this.root.style.setProperty('--H', H + 'px');
+    this.root.style.setProperty('--touch-min', (44 / s) + 'px');
     this.root.style.setProperty('--notice-font', Math.max(21, 12 / s) + 'px');
     this.root.style.setProperty('--notice-sub-font', Math.max(19, 12 / s) + 'px');
     this.portrait = port;

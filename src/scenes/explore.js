@@ -58,7 +58,7 @@ const ExploreScene = {
     this.night = this.phase === 'night';
     // the local time of day: the backdrop is painted for the hour (moon and stars, a sunset, a misty morning) and the
     // sprites take a light grade in CSS (.tod-*) — never a dark sheet over the whole scene (3.4.1)
-    this.tod = zoneTod(z, this.phase); this.meteorT = U.rf(4, 10);
+    this.tod = zoneTod(z, this.phase); this.meteorT = U.rf(4, 10); this.ambSoundT = U.rf(7, 12);
     await WArt.bake(z.biome, z.seed, this.tod);
     const root = UI.scene;
     root.className = 'explore b-' + z.biome + (this.tod ? ' tod-' + this.tod : '');
@@ -126,7 +126,7 @@ const ExploreScene = {
     Platform.context({ zone: zid, isle: z.isle || 'home' });
     if ((firstVisit || p.arrive) && !home && ISLE[z.isle].zones[0] === zid) Platform.track('isle', z.isle, 'start'); // arrive: from the first battle
     if (home && firstVisit) Platform.track('base', this.area, 'start');
-    Snd.music(home ? 'home' : ISLE[z.isle].music);
+    Snd.music(home ? 'home' : z.music || ISLE[z.isle].music);
     Platform.gameplayStart();
     this.running = true;
     this.last = performance.now();
@@ -320,10 +320,10 @@ const ExploreScene = {
     if (!S) return;
     let src = S.idle;
     const hop = e.gait === 'hop';
-    if (S.move && (e.moving || (hop && e.act === 'hop'))) {
+    if (S.move && (e.moving || (hop && (e.act === 'hop' || (e.act === 'breeze' && e.actT >= 0.42 && e.actT < 1.26))))) {
       let i;
       if (hop) {
-        const p = e.moving ? (e.hopP || 0) : 0.12 + 0.68 * Math.min(0.999, (e.actT || 0) / 0.42);
+        const p = e.moving ? (e.hopP || 0) : 0.12 + 0.68 * Math.min(0.999, (e.act === 'breeze' ? Math.max(0, (e.actT || 0) - 0.42) % 0.42 : (e.actT || 0)) / 0.42);
         i = p < 0.12 ? 0 : p < 0.24 ? 1 : p < 0.44 ? 2 : p < 0.58 ? 3 : p < 0.8 ? 4 : 5;
         i = Math.floor(i * S.move.length / MonArt.FRAMES); // lite mode has every other picture
       } else i = Math.floor((((e.cyc || 0) % 1) + 1) % 1 * S.move.length);
@@ -332,7 +332,7 @@ const ExploreScene = {
     } else if (e.state === 'sleep' && S.blink) src = S.blink;
     else {
       let k = 0;
-      if (S.loop) {
+      if (S.loop && !Main.reducedMotion) {
         e.it = (e.it == null ? Math.random() * S.loop.length : e.it) + dt * 5 * S.loop.length / MonArt.FRAMES;
         k = Math.floor(e.it) % S.loop.length;
         src = S.loop[k];
@@ -701,6 +701,10 @@ const ExploreScene = {
     const P = this.player;
     const kx = (this.keys.right ? 1 : 0) - (this.keys.left ? 1 : 0), ky = (this.keys.down ? 1 : 0) - (this.keys.up ? 1 : 0);
     const locked = this.busy || UI.anyModal() || UI.busyGo;
+    if (!locked && !this.tut && Snd.sfx() && (this.ambSoundT -= dt) <= 0) {
+      this.ambSoundT = U.rf(10, 18);
+      Snd.environment(this.zone.biome, this.night);
+    }
     let goal = null;
     if ((kx || ky) && !locked) {
       P.target = null; this.chase = null; this.onArrive = null;
@@ -866,8 +870,12 @@ const ExploreScene = {
       default: // idle
         this.gaitIdle(w, dt);
         if (w.t <= 0 && !w.act) {
+          const signature = w.sp === 'sunkit' ? 'proud' : w.sp === 'breezle' ? 'breeze' : null;
           const r = Math.random();
-          if (r < 0.46) this.wander(w, P);
+          if (signature && !Main.reducedMotion && !locked && !w.tutorial && !w._offscreen && this.time >= (w.signatureAt || 0)) {
+            this.act(w, signature); w.t = 2; w.signatureAt = this.time + U.rf(10, 17);
+          }
+          else if (r < 0.46) this.wander(w, P);
           else if (r < 0.58) { this.act(w, 'look'); w.t = U.rf(1, 2); }
           else if (r < 0.68 && w.gait !== 'float') { this.act(w, 'hop'); w.t = U.rf(0.8, 1.6); }
           else if (r < 0.78 && w.gait !== 'float' && w.gait !== 'swim') { this.act(w, 'sit'); w.t = U.rf(1.8, 3); }
@@ -935,6 +943,7 @@ const ExploreScene = {
   },
   /** at rest: breathing (slow squash), floating things keep hovering; `k` slows it for sleep */
   gaitIdle(w, dt, k = 1) {
+    if (Main.reducedMotion) { w.bob = w.gait === 'float' ? -w.lift : 0; w.rot = 0; w.sx = w.sy = 1; w.moving = false; return; }
     w.ph += dt * 0.42 * k;
     const b = Math.sin(w.ph * Math.PI * 2);
     const ease = Math.min(1, dt * 8);
@@ -948,10 +957,24 @@ const ExploreScene = {
   /** the act's offsets are computed fresh every frame on top of the gait's base pose (never accumulated) */
   doAct(w, dt) {
     w.ab = 0; w.ar = 0; w.ax = 1; w.ay = 1;
+    if (Main.reducedMotion) { w.act = null; return; }
     if (!w.act) return;
     w.actT += dt;
     const t2 = w.actT;
     switch (w.act) {
+      // Brief anticipation, an expressive pose, then a soft settle. No extra sprite variants.
+      case 'proud': {
+        if (t2 >= 1.65) { w.act = null; break; }
+        const q = t2 < 0.3 ? -Math.sin(t2 / 0.3 * Math.PI) * 0.45 : Math.sin((t2 - 0.3) / 1.35 * Math.PI);
+        w.ab = -4 * q; w.ay = 1 + 0.07 * q; w.ax = 1 - 0.035 * q; w.ar = -w.face * 4 * q;
+        break;
+      }
+      case 'breeze': {
+        if (t2 >= 1.5) { w.act = null; break; }
+        if (t2 < 0.42) w.ar = w.face * 10 * Math.sin(t2 / 0.42 * Math.PI);
+        else if (t2 < 1.26) { const q = Math.sin(((t2 - 0.42) % 0.42) / 0.42 * Math.PI); w.ab = -q * (t2 < 0.84 ? 16 : 10); w.ay = 1 + 0.07 * q; w.ax = 1 - 0.04 * q; }
+        break;
+      }
       case 'hop': { const dur = w.pond ? 0.56 : 0.42; if (t2 >= dur) { w.act = null; break; } const q = Math.sin(t2 / dur * Math.PI); w.ab = -q * (w.pond ? 40 : 22); if (w.pond) w.ar = w.face * (t2 / dur - 0.5) * 30; w.ay = 1 + 0.12 * q; w.ax = 1 - 0.08 * q; break; }
       case 'sit': { const dur = 2.2; if (t2 >= dur) { w.act = null; break; } const q = Math.max(0, Math.min(1, t2 / 0.2, (dur - t2) / 0.25)); w.ay = 1 - 0.1 * q; w.ax = 1 + 0.06 * q; break; }
       case 'sniff': { const dur = 1.1; if (t2 >= dur) { w.act = null; break; } const env = Math.sin(t2 / dur * Math.PI); w.ar = Math.sin(t2 * 22) * 4 * env + w.face * 8 * env; break; }
@@ -1017,7 +1040,7 @@ const ExploreScene = {
   },
   /* ---------------- a shooting star now and then, where a night sky is open overhead ---------------- */
   updateSky(dt) {
-    if (this.tod !== 'night' || !NIGHT_SKY.includes(this.zone.biome) || (this.meteorT -= dt) > 0) return;
+    if (Main.reducedMotion || this.tod !== 'night' || !NIGHT_SKY.includes(this.zone.biome) || (this.meteorT -= dt) > 0) return;
     this.meteorT = U.rf(12, 26);
     const m = U.el('i', { class: 'shoot' });
     m.style.left = U.rf(80, 900) + 'px'; m.style.top = U.rf(24, 150) + 'px';
@@ -1526,12 +1549,13 @@ const ExploreScene = {
   ambient() {
     let kind = BIOME_PARTICLES[this.zone.biome] || 'petal';
     if (this.tod === 'night' && kind === 'petal') kind = 'firefly'; // (petals drift by day, fireflies come out at night)
-    for (let i = 0; i < 16; i++) {
+    const count = Main.reducedMotion ? 0 : Main.lite ? 6 : this.zone.biome === 'forest' ? 8 : 12;
+    for (let i = 0; i < count; i++) {
       const p = U.el('i', { class: 'ap ap-' + kind });
       p.style.left = U.rf(0, 1280) + 'px';
       p.style.top = U.rf(kind === 'snow' || kind === 'petal' ? -40 : 80, 700) + 'px';
       p.style.animationDelay = (-U.rf(0, 9)) + 's';
-      p.style.animationDuration = U.rf(6, 12) + 's';
+      p.style.animationDuration = (this.zone.biome === 'forest' ? U.rf(12, 20) : U.rf(8, 14)) + 's';
       this.amb.appendChild(p);
     }
   },
